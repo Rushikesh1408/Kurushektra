@@ -7,22 +7,36 @@ import type { UserRole } from '../../types';
 export default function LoginPage() {
   const { login, loading } = useAuth();
   const navigate = useNavigate();
-  const [email, setEmail] = useState('alex@example.com');
-  const [password, setPassword] = useState('');
+  const [email, setEmail] = useState('demo-student@codearena.local');
+  const [password, setPassword] = useState('demo-arena-2026!');
   const [role, setRole] = useState<UserRole>('learner');
   const [error, setError] = useState('');
+
+  const handleSelectRole = (r: UserRole) => {
+    setRole(r);
+    if (r === 'learner') {
+      setEmail('demo-student@codearena.local');
+      setPassword('demo-arena-2026!');
+    } else if (r === 'teacher') {
+      setEmail('demo-teacher@codearena.local');
+      setPassword('demo-arena-2026!');
+    } else {
+      setEmail('admin@example.com');
+      setPassword('demo-arena-2026!');
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     if (!email) { setError('Email is required'); return; }
     try {
-      await login(email, password, role);
-      if (role === 'teacher') navigate('/teacher/dashboard');
-      else if (role === 'admin') navigate('/admin/users');
+      const loggedInUser = await login(email, password, role);
+      if (loggedInUser.role === 'teacher') navigate('/teacher/dashboard');
+      else if (loggedInUser.role === 'admin') navigate('/admin/users');
       else navigate('/dashboard');
-    } catch {
-      setError('Invalid credentials. Please try again.');
+    } catch (err: any) {
+      setError(err?.message || 'Invalid credentials. Please verify backend is running.');
     }
   };
 
@@ -47,7 +61,7 @@ export default function LoginPage() {
                 <button
                   key={r}
                   className={`btn btn-sm ${role === r ? 'btn-primary' : 'btn-secondary'}`}
-                  onClick={() => setRole(r)}
+                  onClick={() => handleSelectRole(r)}
                   type="button"
                 >
                   {r}

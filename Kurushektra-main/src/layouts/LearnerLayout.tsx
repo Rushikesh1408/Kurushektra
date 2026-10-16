@@ -132,7 +132,7 @@ export default function LearnerLayout() {
       </header>
 
       {/* Main content */}
-      <main style={{ paddingTop: '3rem', paddingLeft: '15rem', minHeight: '100vh' }} className="md:pl-sidebar" id="main-content">
+      <main style={{ paddingTop: '3rem', minHeight: '100vh' }} className="pl-sidebar" id="main-content">
         <div style={{ padding: '1.5rem' }}>
           <Outlet />
         </div>

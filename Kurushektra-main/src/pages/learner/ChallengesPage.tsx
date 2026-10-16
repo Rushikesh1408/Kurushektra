@@ -1,23 +1,68 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Icon, DifficultyBadge, EmptyState } from '../../components/ui';
 import { mockChallenges } from '../../data/mockData';
-import type { Difficulty } from '../../types';
+import type { Challenge, Difficulty } from '../../types';
+import { api } from '../../services/api';
 
-const ALL_TAGS = Array.from(new Set(mockChallenges.flatMap(c => c.tags)));
 const DIFFICULTIES: Difficulty[] = ['easy', 'medium', 'hard'];
 
 export default function ChallengesPage() {
+  const [challenges, setChallenges] = useState<Challenge[]>(mockChallenges);
+  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [difficulty, setDifficulty] = useState<Difficulty | 'all'>('all');
   const [selectedTag, setSelectedTag] = useState('');
 
-  const filtered = useMemo(() => mockChallenges.filter(c => {
+  useEffect(() => {
+    let mounted = true;
+    async function loadChallenges() {
+      try {
+        const res = await api.challenges.list();
+        if (mounted && res.items && res.items.length > 0) {
+          const mapped: Challenge[] = res.items.map(item => {
+            // Check if mock has richer metadata, otherwise build from backend data
+            const existing = mockChallenges.find(m => m.slug === item.slug || m.title.toLowerCase().includes(item.slug));
+            return {
+              id: item.id,
+              slug: item.slug,
+              title: item.title,
+              difficulty: item.difficulty,
+              tags: existing?.tags || item.languages || ['algorithms'],
+              description: existing?.description || `Problem ${item.title}. Read the problem statement in the workspace.`,
+              examples: existing?.examples || [],
+              constraints: existing?.constraints || ['O(n) time complexity target'],
+              acceptanceRate: existing?.acceptanceRate || 85,
+              timeComplexity: existing?.timeComplexity || 'O(n)',
+              spaceComplexity: existing?.spaceComplexity || 'O(1)',
+              starterCode: existing?.starterCode || {
+                python: '# Write your solution here\n',
+                javascript: '// Write your solution here\n',
+              },
+            };
+          });
+          setChallenges(mapped);
+        }
+      } catch (err) {
+        console.warn('Failed to load challenges from backend, using fallback dataset:', err);
+      } finally {
+        if (mounted) setLoading(false);
+      }
+    }
+    loadChallenges();
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  const allTags = useMemo(() => Array.from(new Set(challenges.flatMap(c => c.tags))), [challenges]);
+
+  const filtered = useMemo(() => challenges.filter(c => {
     if (search && !c.title.toLowerCase().includes(search.toLowerCase()) && !c.tags.some(t => t.includes(search.toLowerCase()))) return false;
     if (difficulty !== 'all' && c.difficulty !== difficulty) return false;
     if (selectedTag && !c.tags.includes(selectedTag)) return false;
     return true;
-  }), [search, difficulty, selectedTag]);
+  }), [challenges, search, difficulty, selectedTag]);
 
   return (
     <div className="animate-fade-in">
@@ -25,11 +70,21 @@ export default function ChallengesPage() {
         <div>
           <h1 className="text-headline-lg text-primary">Challenge Explorer</h1>
           <p className="text-body-md text-on-surface-variant" style={{ marginTop: '0.25rem' }}>
-            <span className="text-code-sm text-outline">// {filtered.length} challenges available</span>
+            <span className="text-code-sm text-outline">// {filtered.length} challenges available {loading ? '(syncing...)' : '(live backend)'}</span>
           </p>
         </div>
         <div style={{ display: 'flex', gap: '0.5rem' }}>
-          <button className="btn btn-secondary btn-sm"><Icon name="shuffle" size={16} /> Random</button>
+          <button
+            className="btn btn-secondary btn-sm"
+            onClick={() => {
+              if (challenges.length > 0) {
+                const random = challenges[Math.floor(Math.random() * challenges.length)];
+                window.location.href = `/workspace/${random.id}`;
+              }
+            }}
+          >
+            <Icon name="shuffle" size={16} /> Random
+          </button>
         </div>
       </div>
 
@@ -59,7 +114,7 @@ export default function ChallengesPage() {
 
       {/* Tag pills */}
       <div style={{ display: 'flex', gap: '0.375rem', flexWrap: 'wrap', marginBottom: '1rem' }}>
-        {ALL_TAGS.slice(0, 12).map(tag => (
+        {allTags.slice(0, 12).map(tag => (
           <button key={tag} className={`badge ${selectedTag === tag ? 'badge-primary' : 'badge-neutral'}`}
             style={{ cursor: 'pointer', padding: '0.25rem 0.625rem', textTransform: 'none', letterSpacing: 0 }}
             onClick={() => setSelectedTag(selectedTag === tag ? '' : tag)}>

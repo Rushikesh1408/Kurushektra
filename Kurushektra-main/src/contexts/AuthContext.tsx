@@ -1,42 +1,90 @@
-import React, { createContext, useContext, useState, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import type { User, UserRole } from '../types';
-import { mockUser, mockTeacher, mockAdmin } from '../data/mockData';
+import { api, ApiError } from '../services/api';
+import type { BackendUser } from '../services/api';
 
 interface AuthContextValue {
   user: User | null;
   isAuthenticated: boolean;
-  login: (email: string, password: string, role?: UserRole) => Promise<void>;
-  logout: () => void;
+  login: (email: string, password?: string, preferredRole?: UserRole) => Promise<User>;
+  logout: () => Promise<void>;
   loading: boolean;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
+function mapBackendUser(bUser: BackendUser): User {
+  const role: UserRole = bUser.role === 'teacher' ? 'teacher' : bUser.role === 'admin' ? 'admin' : 'learner';
+  return {
+    id: bUser.id,
+    name: bUser.full_name || bUser.email.split('@')[0],
+    email: bUser.email,
+    role,
+    joinedAt: new Date().toISOString(),
+  };
+}
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  // Demo: pick user from localStorage role or default to learner
-  const storedRole = (localStorage.getItem('cc_role') as UserRole) || null;
-  const initialUser = storedRole === 'teacher' ? mockTeacher
-    : storedRole === 'admin' ? mockAdmin
-    : storedRole === 'learner' ? mockUser
-    : null;
+  const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  const [user, setUser] = useState<User | null>(initialUser);
-  const [loading, setLoading] = useState(false);
-
-  const login = useCallback(async (email: string, _password: string, role: UserRole = 'learner') => {
-    setLoading(true);
-    // Demo auth — replace with real API call when backend is ready
-    await new Promise(r => setTimeout(r, 600));
-    const u = role === 'teacher' ? mockTeacher
-      : role === 'admin' ? mockAdmin
-      : mockUser;
-    setUser({ ...u, email });
-    localStorage.setItem('cc_token', 'demo-token');
-    localStorage.setItem('cc_role', role);
-    setLoading(false);
+  // Initialize and verify authentication against real backend on mount
+  useEffect(() => {
+    let mounted = true;
+    async function checkAuth() {
+      const token = localStorage.getItem('cc_token');
+      if (!token) {
+        if (mounted) setLoading(false);
+        return;
+      }
+      try {
+        const me = await api.auth.me();
+        if (mounted) {
+          const mapped = mapBackendUser(me);
+          setUser(mapped);
+          localStorage.setItem('cc_role', mapped.role);
+        }
+      } catch (err) {
+        console.warn('Auth verification failed:', err);
+        localStorage.removeItem('cc_token');
+        localStorage.removeItem('cc_role');
+        if (mounted) setUser(null);
+      } finally {
+        if (mounted) setLoading(false);
+      }
+    }
+    checkAuth();
+    return () => {
+      mounted = false;
+    };
   }, []);
 
-  const logout = useCallback(() => {
+  const login = useCallback(async (email: string, password = 'demo-arena-2026!', _preferredRole?: UserRole): Promise<User> => {
+    setLoading(true);
+    try {
+      const res = await api.auth.login(email, password);
+      localStorage.setItem('cc_token', res.access_token);
+      const mapped = mapBackendUser(res.user);
+      setUser(mapped);
+      localStorage.setItem('cc_role', mapped.role);
+      return mapped;
+    } catch (err: any) {
+      // If demo backend is starting up or needs seeding, provide clear error
+      if (err instanceof ApiError) {
+        throw err;
+      }
+      throw new Error(err?.message || 'Login failed');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  const logout = useCallback(async () => {
+    try {
+      await api.auth.logout();
+    } catch {
+      // ignore
+    }
     setUser(null);
     localStorage.removeItem('cc_token');
     localStorage.removeItem('cc_role');
