@@ -1,4 +1,11 @@
 import pytest
+from app.brain.answer_evaluation import evaluate_student_answer
+from app.brain.debugging import get_progressive_hint
+from app.brain.alternatives import explore_alternative_solutions
+from app.brain.provider import BrainProvider
+from app.brain.types import HintLevel
+from app.models.base import Role
+from app.services.ai_provider import NullProvider
 from app.services.executor import Outcome, RunResult
 from tests.conftest import login, make_user
 from tests.test_submissions import Fake, correct, drain, setup_challenge, submit
@@ -96,3 +103,101 @@ def test_rag_tutor_ingestion_and_grounded_citations(client, db, teacher, student
     # Must refuse or acknowledge insufficient evidence!
     assert data_out["has_sufficient_evidence"] is False
     assert "sufficient approved material" in data_out["answer"]
+
+
+def test_rag_access_control_and_cross_student_privacy(client, db, teacher, student):
+    """Students cannot ingest documents; students cannot leak other students' code through context_submission_id."""
+    sh = login(client, "student@example.com")
+    make_user(db, "student2@example.com", Role.STUDENT)
+    sh2 = login(client, "student2@example.com")
+
+    # 1. Student cannot ingest documents (Teacher/Admin only)
+    r_ing = client.post(f"{API}/tutor/ingest", headers=sh, json={
+        "title": "Malicious Student Ingestion",
+        "content": "Secret exam answers",
+    })
+    assert r_ing.status_code == 403
+
+    # 2. Setup challenge and submission for student 1
+    _, ch = setup_challenge(client, db, teacher)
+    sid = submit(client, sh, ch["id"]).json()["id"]
+
+    # Student 2 attempts to use Student 1's submission ID in tutor chat
+    r_chat = client.post(f"{API}/tutor/chat", headers=sh2, json={
+        "mode": "debug",
+        "question": "Explain this code",
+        "context_submission_id": sid,
+        "course": "cs101",
+    })
+    assert r_chat.status_code == 200
+    # Must not contain private student 1 source code!
+    assert "def add(a, b)" not in r_chat.json()["answer"]
+
+
+def test_comprehension_cross_student_unauthorized_access(client, db, teacher, student):
+    """Students cannot access hints, alternatives, predictions, or evaluations for submissions they do not own."""
+    sh = login(client, "student@example.com")
+    make_user(db, "student2@example.com", Role.STUDENT)
+    sh2 = login(client, "student2@example.com")
+
+    _, ch = setup_challenge(client, db, teacher)
+    sid = submit(client, sh, ch["id"]).json()["id"]
+    drain(db, Fake(correct))
+
+    # Student 2 calls hints for Student 1 submission
+    r_hint = client.post(f"{API}/comprehension/hints", headers=sh2, json={"submission_id": sid, "hint_level": 1})
+    assert r_hint.status_code == 400
+    assert "not authorized" in str(r_hint.json()).lower()
+
+    # Student 2 calls alternatives for Student 1 submission
+    r_alt = client.post(f"{API}/comprehension/alternatives", headers=sh2, json={"submission_id": sid})
+    assert r_alt.status_code == 400
+    assert "not authorized" in str(r_alt.json()).lower()
+
+    # Student 2 calls prediction generate for Student 1 submission
+    r_pred = client.post(f"{API}/comprehension/predictions/generate", headers=sh2, json={"submission_id": sid})
+    assert r_pred.status_code == 400
+    assert "not authorized" in str(r_pred.json()).lower()
+
+    # Student 2 calls explain failure for Student 1 submission
+    r_fail = client.post(f"{API}/comprehension/explain-failure", headers=sh2, json={"submission_id": sid})
+    assert r_fail.status_code == 400
+    assert "not authorized" in str(r_fail.json()).lower()
+
+    # Student 2 calls viva evaluate for Student 1 submission
+    r_viva = client.post(f"{API}/comprehension/viva/evaluate", headers=sh2, json={
+        "submission_id": sid,
+        "question_id": "dummy-q",
+        "answer_text": "testing",
+    })
+    assert r_viva.status_code == 400
+    assert "not authorized" in str(r_viva.json()).lower()
+
+
+def test_brain_deterministic_fallbacks_on_provider_error(client, db, teacher, student):
+    """When the AI provider throws or is unconfigured, deterministic fallbacks return valid schemas."""
+    from app.brain.context import build_submission_context
+
+    _, ch = setup_challenge(client, db, teacher)
+    sh = login(client, "student@example.com")
+    sid = submit(client, sh, ch["id"]).json()["id"]
+    drain(db, Fake(correct))
+
+    u = db.query(student.__class__).filter_by(email="student@example.com").first()
+    ctx = build_submission_context(db, sid, u)
+
+    # Provider with disabled API
+    offline_provider = BrainProvider(core_provider=NullProvider())
+    assert not offline_provider.is_available
+
+    # 1. Progressive hint fallback
+    hint = get_progressive_hint(submission_context=ctx, hint_level=HintLevel.CONCEPTUAL, provider=offline_provider)
+    assert hint.hint_level == 1
+    assert hint.hint_title == "Conceptual Direction"
+    assert len(hint.hint_text) > 10
+    assert hint.reveals_hidden_tests is False
+
+    # 2. Alternative solutions fallback
+    alts = explore_alternative_solutions(submission_context=ctx, provider=offline_provider)
+    assert len(alts.alternatives) >= 2
+    assert any(a.time_complexity for a in alts.alternatives)

@@ -3,8 +3,8 @@
 **Audit Date**: October 2026  
 **Auditor**: Antigravity Full-Stack AI Lead & Security Engineer  
 **Baseline Test Results**:
-- Backend: **183 passed, 0 failed, 7 deprecation warnings in 183.60s** via `python -m pytest tests/`.
-- Frontend: **Clean production build** (`tsc -b && vite build`) in **590ms**, 0 errors, 0 warnings.
+- Backend: **188 passed, 0 failed, 7 deprecation warnings in 190.21s** via `python -m pytest tests/`.
+- Frontend: **Clean production build** (`tsc -b && vite build`) in **581ms**, 0 errors, 0 warnings.
 - Frontend Linter: `oxlint` 0 errors on 35 files with 116 rules.
 - Database Schema: **35 active tables**, Alembic migration head at `0003_cognicode_adaptive_and_evidence_schema.py`, **0 schema drift**.
 
