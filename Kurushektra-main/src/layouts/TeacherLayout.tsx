@@ -1,4 +1,3 @@
-import React, { useState } from 'react';
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { Icon } from '../components/ui';
@@ -12,7 +11,6 @@ const NAV = [
 export default function TeacherLayout() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
-  const [menuOpen, setMenuOpen] = useState(false);
 
   return (
     <div style={{ minHeight: '100vh', backgroundColor: 'var(--color-background)', display: 'flex' }}>

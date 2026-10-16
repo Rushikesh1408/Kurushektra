@@ -21,7 +21,7 @@ export default function LoginPage() {
       if (role === 'teacher') navigate('/teacher/dashboard');
       else if (role === 'admin') navigate('/admin/users');
       else navigate('/dashboard');
-    } catch (err) {
+    } catch {
       setError('Invalid credentials. Please try again.');
     }
   };

@@ -1,14 +1,11 @@
-import React from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { Icon, ProgressBar, SimulatedDemoLabel, SectionHeader, MetricCard, MasteryBadge } from '../../components/ui';
-import { mockSubmissions, mockMastery, mockGaps } from '../../data/mockData';
+import { mockMastery, mockGaps } from '../../data/mockData';
 
 export default function DashboardPage() {
   const { user } = useAuth();
-  const activeSubmission = mockSubmissions[0];
   const topMastery = mockMastery.slice(0, 4);
-  const topGap = mockGaps[0];
 
   return (
     <div className="animate-fade-in">

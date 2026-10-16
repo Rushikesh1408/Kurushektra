@@ -1,4 +1,3 @@
-import React from 'react';
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { Icon } from '../components/ui';
