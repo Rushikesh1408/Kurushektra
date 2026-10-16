@@ -1,7 +1,53 @@
+import { useState, useEffect } from 'react';
 import { Icon, ProgressBar, SimulatedDemoLabel } from '../../components/ui';
 import { mockReport, mockMastery } from '../../data/mockData';
+import { api } from '../../services/api';
 
 export default function LearnerReportPage() {
+  const [dnaPatterns, setDnaPatterns] = useState<Array<{ id: string; pattern_key: string; pattern_name: string; category: string; confidence: number; occurrence_count: number; status: string; remediation_advice?: string }>>([]);
+  const [timelineEvents, setTimelineEvents] = useState<Array<{ id: string; event_type: string; concept_id?: string; timestamp: string; metadata: Record<string, unknown> }>>([]);
+  const [masteryData, setMasteryData] = useState(mockMastery);
+
+  useEffect(() => {
+    let mounted = true;
+    async function loadReportData() {
+      try {
+        const [dnaRes, timelineRes, masteryRes] = await Promise.allSettled([
+          api.learning.dna(),
+          api.learning.timeline(undefined, undefined, 1, 10),
+          api.adaptive.mastery(),
+        ]);
+
+        if (mounted && dnaRes.status === 'fulfilled' && dnaRes.value.patterns) {
+          setDnaPatterns(dnaRes.value.patterns);
+        }
+
+        if (mounted && timelineRes.status === 'fulfilled' && timelineRes.value.items) {
+          setTimelineEvents(timelineRes.value.items);
+        }
+
+        if (mounted && masteryRes.status === 'fulfilled' && masteryRes.value.length > 0) {
+          const mapped = masteryRes.value.map(bm => ({
+            concept: bm.name,
+            level: bm.status as any,
+            percentage: Math.round(bm.mastery_score * 100),
+            confidence: bm.confidence > 0.7 ? ('high' as const) : bm.confidence > 0.4 ? ('medium' as const) : ('low' as const),
+            testsCompleted: bm.total_attempts,
+            testsTotal: Math.max(5, bm.total_attempts + 2),
+            lastAssessed: new Date().toISOString(),
+          }));
+          setMasteryData(mapped);
+        }
+      } catch (err) {
+        console.warn('Could not fetch report data from backend:', err);
+      }
+    }
+    loadReportData();
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
   const acceptanceRate = Math.round((mockReport.acceptedSubmissions / mockReport.totalSubmissions) * 100);
 
   const handleExport = () => {
@@ -126,30 +172,71 @@ export default function LearnerReportPage() {
         <div className="card p-5 bg-surface-container-low border border-outline-variant space-y-3">
           <div className="flex items-center gap-2 text-amber-400">
             <Icon name="bolt" size={18} />
-            <h3 className="text-headline-sm font-semibold">Priority Growth Areas</h3>
+            <h3 className="text-headline-sm font-semibold">Priority Growth Areas (Learning DNA)</h3>
           </div>
-          <ul className="space-y-2 text-body-sm text-on-surface-variant font-mono">
-            <li className="flex items-start gap-2">
-              <span className="text-amber-400">!</span>
-              <span><strong>Boundary Checks:</strong> Binary search edge cases (left == right off-by-one errors).</span>
-            </li>
-            <li className="flex items-start gap-2">
-              <span className="text-amber-400">!</span>
-              <span><strong>1D Dynamic Programming:</strong> Formulating state transition invariants for stair stepping.</span>
-            </li>
-            <li className="flex items-start gap-2">
-              <span className="text-amber-400">!</span>
-              <span><strong>Hash Collisions:</strong> Articulating worst-case bucket degradation mechanics.</span>
-            </li>
-          </ul>
+          {dnaPatterns.length > 0 ? (
+            <ul className="space-y-2.5 text-body-sm text-on-surface-variant font-mono">
+              {dnaPatterns.map((pat) => (
+                <li key={pat.id} className="flex flex-col gap-0.5 p-2 rounded bg-surface-container-lowest border border-outline-variant">
+                  <div className="flex items-center justify-between text-label-xs">
+                    <span className="text-amber-400 font-bold">{pat.pattern_name}</span>
+                    <span className="text-outline uppercase">Confidence: {Math.round(pat.confidence * 100)}% ({pat.occurrence_count}x)</span>
+                  </div>
+                  {pat.remediation_advice && (
+                    <span className="text-label-xs text-on-surface-variant font-sans">{pat.remediation_advice}</span>
+                  )}
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <ul className="space-y-2 text-body-sm text-on-surface-variant font-mono">
+              <li className="flex items-start gap-2">
+                <span className="text-amber-400">!</span>
+                <span><strong>Boundary Checks:</strong> Binary search edge cases (left == right off-by-one errors).</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-amber-400">!</span>
+                <span><strong>1D Dynamic Programming:</strong> Formulating state transition invariants for stair stepping.</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-amber-400">!</span>
+                <span><strong>Hash Collisions:</strong> Articulating worst-case bucket degradation mechanics.</span>
+              </li>
+            </ul>
+          )}
         </div>
       </div>
+
+      {/* Verified Learning Evidence Timeline */}
+      {timelineEvents.length > 0 && (
+        <div className="card p-5 bg-surface-container-low border border-outline-variant space-y-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Icon name="history" size={18} className="text-primary" />
+              <h3 className="text-headline-sm font-semibold text-primary">Verified Learning Evidence Timeline</h3>
+            </div>
+            <span className="text-label-xs font-mono text-outline">Live Telemetry Ledger</span>
+          </div>
+          <div className="space-y-2">
+            {timelineEvents.map((evt) => (
+              <div key={evt.id} className="p-2.5 rounded bg-surface-container-lowest border border-outline-variant flex items-center justify-between text-label-xs font-mono">
+                <div className="flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-primary" />
+                  <span className="text-primary font-bold uppercase">{evt.event_type.replace(/_/g, ' ')}</span>
+                  {evt.concept_id && <span className="text-outline">({evt.concept_id})</span>}
+                </div>
+                <span className="text-outline">{new Date(evt.timestamp).toLocaleString()}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Concept Breakdown Table */}
       <div className="card p-5 bg-surface-container-low border border-outline-variant space-y-4">
         <h3 className="text-headline-sm text-primary font-semibold">Concept Assessment Inventory</h3>
         <div className="space-y-3">
-          {mockMastery.map((m, i) => (
+          {masteryData.map((m, i) => (
             <div key={i} className="p-3 bg-surface-container-lowest rounded border border-outline-variant flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div className="space-y-0.5">
                 <span className="text-body-sm font-semibold text-primary">{m.concept}</span>

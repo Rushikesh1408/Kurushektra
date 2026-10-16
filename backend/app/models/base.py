@@ -14,6 +14,19 @@ def utcnow() -> datetime:
     return datetime.now(timezone.utc)
 
 
+def as_aware(dt: datetime | None) -> datetime | None:
+    """Return ``dt`` as a timezone-aware UTC datetime, or None.
+
+    SQLite ignores ``DateTime(timezone=True)`` and hands values back *naive*; PostgreSQL hands them
+    back aware. Comparing the two directly raises ``TypeError``. Callers that compare a stored
+    timestamp against ``utcnow()`` must normalise first. We assume naive values are already UTC,
+    because every timestamp in this codebase is written via ``utcnow()``.
+    """
+    if dt is None:
+        return None
+    return dt if dt.tzinfo is not None else dt.replace(tzinfo=timezone.utc)
+
+
 def enum_col(enum_cls: type[enum.Enum], **kw):
     """Portable enum stored as VARCHAR + CHECK, so migrations work on PostgreSQL and SQLite."""
     return Enum(enum_cls, native_enum=False, length=32, values_callable=lambda e: [m.value for m in e], **kw)
@@ -104,3 +117,43 @@ class ParticipantStatus(str, enum.Enum):
     INVITED = "invited"
     STARTED = "started"
     COMPLETED = "completed"
+
+
+class LearningEventType(str, enum.Enum):
+    CHALLENGE_OPENED = "challenge_opened"
+    SUBMISSION_CREATED = "submission_created"
+    CODE_EXECUTED = "code_executed"
+    TEST_FAILED = "test_failed"
+    TEST_PASSED = "test_passed"
+    VIVA_ANSWERED = "viva_answered"
+    HINT_REQUESTED = "hint_requested"
+    ERROR_PATTERN_DETECTED = "error_pattern_detected"
+    MASTERY_UPDATED = "mastery_updated"
+    REVISION_COMPLETED = "revision_completed"
+    TELEMETRY_RECORDED = "telemetry_recorded"
+
+
+class ErrorPatternStatus(str, enum.Enum):
+    ACTIVE = "active"
+    WEAKENED = "weakened"
+    RESOLVED = "resolved"
+
+
+class RevisionStatus(str, enum.Enum):
+    PENDING = "pending"
+    COMPLETED = "completed"
+    SKIPPED = "skipped"
+
+
+class KnowledgeAccessScope(str, enum.Enum):
+    PUBLIC = "public"
+    COURSE = "course"
+    TEACHER_ONLY = "teacher_only"
+
+
+class OfflineSyncStatus(str, enum.Enum):
+    RECEIVED = "received"
+    APPLIED = "applied"
+    REJECTED = "rejected"
+    DUPLICATE = "duplicate"
+

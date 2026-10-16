@@ -21,6 +21,21 @@ from app.seed import seed_languages
 PASSWORD = "correct-horse-battery9"
 
 
+@pytest.fixture(autouse=True)
+def _reset_rate_limiter():
+    """Clear the in-memory rate limiter before every test.
+
+    slowapi's default storage is process-global and keyed by client address. Every test here uses the
+    same TestClient peer ("testclient"), so without this an earlier test's requests leak into a later
+    test's window — making a limit-exhaustion test pass or fail depending on suite ordering and timing.
+    This was the cause of a flaky ``test_submit_endpoint_rate_limited`` failure. Resetting per-test
+    (autouse, so it also covers tests that never request the ``db`` fixture) makes results deterministic.
+    """
+    limiter.reset()
+    yield
+    limiter.reset()
+
+
 @pytest.fixture()
 def db():
     engine = get_engine()
