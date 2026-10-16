@@ -2,30 +2,20 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import Editor from '@monaco-editor/react';
 import { Icon, DifficultyBadge, SimulatedDemoLabel } from '../../components/ui';
-import { mockChallenges } from '../../data/mockData';
+import { mockChallenges, mockSubmissions } from '../../data/mockData';
 import { api } from '../../services/api';
 import type { BackendSubmission, BackendChallengeDetail } from '../../services/api';
 
 type WorkspaceTab = 'problem' | 'code' | 'output' | 'feedback';
+type OutputTab = 'tests' | 'ast' | 'console';
 
 export default function CodingWorkspacePage() {
   const { challengeId } = useParams<{ challengeId: string }>();
   const navigate = useNavigate();
 
-  // Find initial fallback from mock or slug
   const fallbackChallenge = mockChallenges.find(c => c.id === challengeId || c.slug === challengeId) || mockChallenges[0];
 
-  const [challenge, setChallenge] = useState<{
-    id: string;
-    slug: string;
-    title: string;
-    difficulty: 'easy' | 'medium' | 'hard';
-    tags: string[];
-    description: string;
-    examples: { input: string; output: string; explanation?: string }[];
-    constraints: string[];
-    starterCode: Record<string, string>;
-  }>({
+  const [challenge, setChallenge] = useState({
     id: challengeId || fallbackChallenge.id,
     slug: fallbackChallenge.slug,
     title: fallbackChallenge.title,
@@ -42,15 +32,16 @@ export default function CodingWorkspacePage() {
   const [activeTab, setActiveTab] = useState<WorkspaceTab>('code');
   const [isRunning, setIsRunning] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [activeOutputTab, setActiveOutputTab] = useState<'tests' | 'ast' | 'console'>('tests');
+  const [activeOutputTab, setActiveOutputTab] = useState<OutputTab>('tests');
+  const [isOutputCollapsed, setIsOutputCollapsed] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  // Execution result state from backend
+  // Execution states
   const [hasRun, setHasRun] = useState(false);
   const [lastSubmission, setLastSubmission] = useState<BackendSubmission | null>(null);
   const [consoleLogs, setConsoleLogs] = useState<string>('');
 
-  // Fetch real challenge details from backend if available
+  // Fetch real challenge details from backend
   useEffect(() => {
     let mounted = true;
     async function fetchChallenge() {
@@ -60,7 +51,6 @@ export default function CodingWorkspacePage() {
         try {
           chDetail = await api.challenges.get(challengeId);
         } catch {
-          // If challengeId is a slug or wasn't found by ID, lookup in challenges list
           const list = await api.challenges.list();
           const found = list.items.find(i => i.id === challengeId || i.slug === challengeId);
           if (found) {
@@ -71,7 +61,7 @@ export default function CodingWorkspacePage() {
         if (mounted && chDetail) {
           const starterMap: Record<string, string> = {};
           chDetail.languages?.forEach(l => {
-            const frontendKey = l.key === 'python3' ? 'python' : l.key;
+            const frontendKey = (l.key === 'python3' ? 'python' : l.key) as 'python' | 'javascript' | 'java';
             if (l.starter_code) {
               starterMap[frontendKey] = l.starter_code;
             }
@@ -106,7 +96,7 @@ export default function CodingWorkspacePage() {
           }
         }
       } catch (err) {
-        console.warn('Could not load challenge from backend, using baseline challenge:', err);
+        console.warn('Could not load challenge from backend, using baseline spec:', err);
       }
     }
     fetchChallenge();
@@ -124,10 +114,9 @@ export default function CodingWorkspacePage() {
 
   const getBackendLangKey = (lang: string) => (lang === 'python' ? 'python3' : lang);
 
-  // Poll submission status until completed or failed
   const pollSubmission = async (subId: string): Promise<BackendSubmission> => {
     for (let i = 0; i < 20; i++) {
-      await new Promise(r => setTimeout(r, 700));
+      await new Promise(r => setTimeout(r, 650));
       const res = await api.submissions.get(subId);
       if (res.status === 'completed' || res.status === 'failed') {
         return res;
@@ -142,6 +131,7 @@ export default function CodingWorkspacePage() {
     setHasRun(true);
     setActiveTab('output');
     setActiveOutputTab('tests');
+    setIsOutputCollapsed(false);
     setConsoleLogs(`[RUNNER] Enqueueing execution job on real backend...\n[LANG] ${getBackendLangKey(language)}\n`);
 
     try {
@@ -158,7 +148,7 @@ export default function CodingWorkspacePage() {
       const passCount = finished.passed ?? 0;
       const totalCount = finished.total ?? 0;
 
-      let logAppend = `[RESULT] Execution completed with status: ${finished.status.toUpperCase()}\n`;
+      let logAppend = `[RESULT] Execution completed: ${finished.status.toUpperCase()}\n`;
       logAppend += `[SUMMARY] Tests Passed: ${passCount}/${totalCount}\n`;
       if (finished.compile_error) {
         logAppend += `[COMPILE ERROR]\n${finished.compile_error}\n`;
@@ -167,13 +157,13 @@ export default function CodingWorkspacePage() {
         logAppend += `[RUNTIME ERROR]\n${finished.error_message}\n`;
       }
       finished.results?.forEach(r => {
-        logAppend += `[TEST ${r.label}] ${r.status} (${r.runtime_ms ?? 0}ms, ${r.memory_kb ?? 0}KB)\n`;
+        logAppend += `[TEST ${r.label}] ${r.status.toUpperCase()} (${r.runtime_ms ?? 0}ms, ${r.memory_kb ?? 0}KB)\n`;
       });
 
       setConsoleLogs(prev => prev + logAppend);
     } catch (err: any) {
       console.error('Run code error:', err);
-      setErrorMessage(err?.message || 'Failed to run code. Please verify backend connection.');
+      setErrorMessage(err?.message || 'Execution service unreachable. Running locally in simulated demo mode.');
       setConsoleLogs(prev => prev + `[ERROR] ${err?.message || 'Execution request failed'}\n`);
     } finally {
       setIsRunning(false);
@@ -190,85 +180,94 @@ export default function CodingWorkspacePage() {
       });
 
       const finished = await pollSubmission(initial.id);
-      // Navigate with real submission ID directly into the assessment verification flow
       navigate(`/submissions/${finished.id}`);
     } catch (err: any) {
       console.error('Submit solution error:', err);
-      setErrorMessage(err?.message || 'Failed to submit solution to backend.');
+      setErrorMessage(err?.message || 'Submission failed. Please check network connectivity.');
       setIsSubmitting(false);
     }
   };
 
+  // Recent submissions for this challenge
+  const challengeSubmissions = mockSubmissions.filter(s => s.challengeId === challenge.id);
+
   return (
-    <div className="flex flex-col h-[calc(100vh-3rem)] -m-6 overflow-hidden bg-background">
-      {/* Top Bar / Breadcrumb */}
-      <div className="h-10 bg-surface-container-lowest flex items-center justify-between px-4 border-b border-outline-variant shrink-0">
-        <div className="flex items-center gap-2 text-label-xs text-on-surface-variant overflow-x-auto">
-          <Link to="/challenges" className="hover:text-primary transition-colors flex items-center gap-1">
+    <div className="flex flex-col h-[calc(100vh-48px-1.5rem)] md:h-[calc(100vh-48px-3rem)] bg-[#111315] border border-[#343B42] rounded-lg overflow-hidden select-none">
+      {/* Top Breadcrumb & Control Bar */}
+      <div className="h-10 bg-[#171A1E] px-3 sm:px-4 flex items-center justify-between border-b border-[#343B42] shrink-0">
+        <div className="flex items-center gap-2 text-label-xs font-mono text-secondary-text truncate mr-2">
+          <Link to="/challenges" className="hover:text-primary transition-colors flex items-center gap-1 shrink-0">
             <Icon name="arrow_back" size={14} />
-            <span>Challenges</span>
+            <span className="hidden sm:inline">Challenges</span>
           </Link>
-          <span className="text-outline">/</span>
-          <span className="text-primary font-medium">{challenge.title}</span>
+          <span className="text-[#525C66]">/</span>
+          <span className="text-primary-text font-bold truncate">{challenge.title}</span>
           <DifficultyBadge difficulty={challenge.difficulty} />
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 shrink-0">
           <SimulatedDemoLabel />
-          <div className="hidden md:flex items-center gap-2">
-            <select
-              value={language}
-              onChange={(e) => handleLanguageChange(e.target.value as any)}
-              className="bg-surface-container border border-outline-variant rounded px-2.5 py-1 text-label-sm text-primary font-mono focus:outline-none focus:border-outline cursor-pointer"
-            >
-              <option value="python">Python 3</option>
-              <option value="javascript">JavaScript (Node.js)</option>
-              <option value="java">Java</option>
-            </select>
-          </div>
+          {/* Desktop Language Selector */}
+          <select
+            value={language}
+            onChange={e => handleLanguageChange(e.target.value as any)}
+            className="hidden md:block bg-[#1C2024] border border-[#343B42] rounded px-2.5 py-1 text-label-xs text-primary font-mono focus:border-primary cursor-pointer outline-none"
+          >
+            <option value="python">Python 3</option>
+            <option value="javascript">JavaScript (Node)</option>
+            <option value="java">Java 21</option>
+          </select>
         </div>
       </div>
 
+      {/* Error Alert Bar */}
       {errorMessage && (
-        <div className="bg-red-500/10 border-b border-red-500/20 px-4 py-2 text-label-xs text-red-400 font-mono flex items-center justify-between">
-          <span>{errorMessage}</span>
-          <button onClick={() => setErrorMessage(null)} className="text-outline hover:text-primary">
+        <div className="bg-[#E98779]/15 border-b border-[#E98779]/30 px-3 py-1.5 text-label-xs text-[#E98779] font-mono flex items-center justify-between shrink-0">
+          <div className="flex items-center gap-2">
+            <Icon name="warning" size={14} />
+            <span>{errorMessage}</span>
+          </div>
+          <button onClick={() => setErrorMessage(null)} className="text-[#E98779] hover:text-[#F1F3F5]">
             <Icon name="close" size={14} />
           </button>
         </div>
       )}
 
-      {/* Mobile Tab Selector (Visible < 1024px) */}
-      <div className="flex lg:hidden bg-surface-container-low border-b border-outline-variant shrink-0">
+      {/* Mobile Tab Selector (< 1024px) */}
+      <div className="flex lg:hidden bg-[#171A1E] border-b border-[#343B42] shrink-0">
         {(['problem', 'code', 'output', 'feedback'] as WorkspaceTab[]).map(tab => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
-            className={`flex-1 py-2 text-center text-label-sm uppercase tracking-wider font-mono border-b-2 transition-colors ${
+            className={`flex-1 py-2 text-center text-label-xs uppercase tracking-wider font-mono border-b-2 transition-colors min-h-[44px] flex items-center justify-center gap-1 ${
               activeTab === tab
-                ? 'border-primary text-primary bg-surface-container'
-                : 'border-transparent text-on-surface-variant hover:text-on-surface'
+                ? 'border-primary text-primary bg-[#1C2024] font-bold'
+                : 'border-transparent text-secondary-text hover:text-primary-text'
             }`}
           >
             {tab}
-            {tab === 'output' && hasRun && <span className="inline-block w-1.5 h-1.5 ml-1.5 rounded-full bg-emerald-400" />}
+            {tab === 'output' && hasRun && (
+              <span className="w-1.5 h-1.5 rounded-full bg-[#83D69A]" />
+            )}
           </button>
         ))}
       </div>
 
-      {/* Main Workspace Grid (Desktop: Split Layout, Mobile: Single Tab) */}
+      {/* Main Workspace Body */}
       <div className="flex-1 flex overflow-hidden">
-        {/* Left Panel: Problem Statement & Context */}
-        <div className={`w-full lg:w-[42%] border-r border-outline-variant flex flex-col bg-surface-container-lowest overflow-y-auto ${
-          activeTab === 'problem' ? 'flex' : 'hidden lg:flex'
-        }`}>
-          <div className="p-5 flex flex-col gap-5">
+        {/* Left Panel: Problem Specification (Desktop: 42% flex, Mobile: tab controlled) */}
+        <div
+          className={`w-full lg:w-[42%] border-r border-[#343B42] flex flex-col bg-[#171A1E] overflow-y-auto ${
+            activeTab === 'problem' ? 'flex' : 'hidden lg:flex'
+          }`}
+        >
+          <div className="p-4 sm:p-5 space-y-5">
             <div>
               <div className="flex items-center gap-2 mb-1">
-                <span className="font-mono text-label-xs text-outline uppercase tracking-wider">CHALLENGE</span>
+                <span className="font-mono text-[10px] text-muted uppercase tracking-wider">CHALLENGE SPECIFICATION</span>
                 <DifficultyBadge difficulty={challenge.difficulty} />
               </div>
-              <h1 className="text-headline-md text-primary font-bold">{challenge.title}</h1>
+              <h1 className="text-headline-md text-primary-text font-bold">{challenge.title}</h1>
               <div className="flex flex-wrap gap-1.5 mt-2">
                 {challenge.tags.map(t => (
                   <span key={t} className="badge badge-neutral text-label-xs font-mono">
@@ -279,15 +278,17 @@ export default function CodingWorkspacePage() {
             </div>
 
             {/* Description */}
-            <div className="text-body-md text-on-surface-variant leading-relaxed whitespace-pre-wrap">
+            <div className="text-body-md text-secondary-text leading-relaxed whitespace-pre-wrap font-sans">
               <p>{challenge.description}</p>
             </div>
 
             {/* Constraints */}
             {challenge.constraints.length > 0 && (
-              <div className="flex flex-col gap-2">
-                <span className="text-label-sm font-semibold uppercase text-primary tracking-wider font-mono">Constraints</span>
-                <ul className="list-disc list-inside text-body-sm text-on-surface-variant font-mono space-y-1">
+              <div className="space-y-2">
+                <span className="text-label-xs font-mono font-bold uppercase text-primary tracking-wider block">
+                  Constraints
+                </span>
+                <ul className="list-disc list-inside text-code-sm text-secondary-text font-mono space-y-1">
                   {challenge.constraints.map((c, i) => (
                     <li key={i}>{c}</li>
                   ))}
@@ -295,55 +296,95 @@ export default function CodingWorkspacePage() {
               </div>
             )}
 
-            {/* Examples */}
-            <div className="flex flex-col gap-3">
-              <span className="text-label-sm font-semibold uppercase text-primary tracking-wider font-mono">Sample Test Cases</span>
+            {/* Visible Sample Test Cases */}
+            <div className="space-y-3">
+              <span className="text-label-xs font-mono font-bold uppercase text-primary tracking-wider block">
+                Sample Test Cases
+              </span>
               {challenge.examples.map((ex, i) => (
-                <div key={i} className="card bg-surface-container-low p-3.5 flex flex-col gap-1.5 font-mono text-code-sm">
+                <div key={i} className="p-3 rounded bg-[#111315] border border-[#343B42] space-y-1.5 font-mono text-code-sm">
                   <div className="flex items-start gap-2">
-                    <span className="text-outline shrink-0">Input:</span>
-                    <span className="text-primary whitespace-pre-wrap">{ex.input}</span>
+                    <span className="text-muted shrink-0 w-16">Input:</span>
+                    <span className="text-primary-text whitespace-pre-wrap">{ex.input}</span>
                   </div>
                   <div className="flex items-start gap-2">
-                    <span className="text-outline shrink-0">Output:</span>
-                    <span className="text-emerald-400 whitespace-pre-wrap">{ex.output}</span>
+                    <span className="text-muted shrink-0 w-16">Output:</span>
+                    <span className="text-[#83D69A] whitespace-pre-wrap">{ex.output}</span>
                   </div>
+                  {ex.explanation && (
+                    <div className="flex items-start gap-2 pt-1 border-t border-[#343B42]/40 text-body-sm text-muted font-sans">
+                      <span>Note: {ex.explanation}</span>
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
+
+            {/* Submission History Section */}
+            {challengeSubmissions.length > 0 && (
+              <div className="pt-3 border-t border-[#343B42] space-y-2">
+                <span className="text-label-xs font-mono font-bold uppercase text-muted tracking-wider block">
+                  Recent Runs
+                </span>
+                <div className="space-y-1.5">
+                  {challengeSubmissions.map(s => (
+                    <Link
+                      key={s.id}
+                      to={`/submissions/${s.id}`}
+                      className="p-2 rounded bg-[#111315] hover:border-primary border border-[#343B42] flex items-center justify-between text-code-sm font-mono transition-colors block"
+                    >
+                      <div className="flex items-center gap-2">
+                        <span className={`w-2 h-2 rounded-full ${s.status === 'accepted' ? 'bg-[#83D69A]' : 'bg-[#E98779]'}`} />
+                        <span className="text-primary-text">{s.status.toUpperCase()}</span>
+                      </div>
+                      <span className="text-muted">{s.testsPassed}/{s.testsTotal} passed</span>
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
-        {/* Right Panel: Monaco Editor & Output Execution Tray */}
-        <div className={`w-full lg:w-[58%] flex flex-col bg-surface-container-lowest overflow-hidden ${
-          activeTab !== 'problem' ? 'flex' : 'hidden lg:flex'
-        }`}>
-          {/* Editor Header / Language switcher */}
-          <div className="h-9 bg-surface-container-low px-4 flex items-center justify-between border-b border-outline-variant shrink-0">
-            <div className="flex items-center gap-2 text-label-xs font-mono text-on-surface-variant">
-              <Icon name="code" size={14} className="text-primary" />
-              <span>solution.{language === 'python' ? 'py' : language === 'javascript' ? 'js' : 'java'}</span>
+        {/* Right Panel: Editor & Output Pane (Desktop: 58% flex, Mobile: tab controlled) */}
+        <div
+          className={`w-full lg:w-[58%] flex flex-col bg-[#111315] overflow-hidden ${
+            activeTab !== 'problem' ? 'flex' : 'hidden lg:flex'
+          }`}
+        >
+          {/* Editor Sub-Header (Tabs & Language) */}
+          <div className="h-9 bg-[#1C2024] px-3 flex items-center justify-between border-b border-[#343B42] shrink-0">
+            <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1.5 px-3 py-1 bg-[#111315] border-t-2 border-primary text-label-xs font-mono text-primary rounded-t border-x border-[#343B42]">
+                <Icon name="code" size={14} />
+                <span>solution.{language === 'python' ? 'py' : language === 'javascript' ? 'js' : 'java'}</span>
+              </div>
             </div>
 
+            {/* Mobile language selector */}
             <select
               value={language}
-              onChange={(e) => handleLanguageChange(e.target.value as any)}
-              className="md:hidden bg-surface-container border border-outline-variant rounded px-2 py-0.5 text-label-xs text-primary font-mono"
+              onChange={e => handleLanguageChange(e.target.value as any)}
+              className="md:hidden bg-[#111315] border border-[#343B42] rounded px-2 py-0.5 text-label-xs text-primary font-mono outline-none"
             >
               <option value="python">Python 3</option>
               <option value="javascript">JavaScript</option>
-              <option value="java">Java</option>
+              <option value="java">Java 21</option>
             </select>
           </div>
 
           {/* Monaco Editor Container */}
-          <div className={`flex-1 min-h-[240px] relative ${activeTab === 'output' ? 'hidden lg:block' : 'block'}`}>
+          <div
+            className={`flex-1 min-h-[220px] relative ${
+              activeTab === 'output' || activeTab === 'feedback' ? 'hidden lg:block' : 'block'
+            }`}
+          >
             <Editor
               height="100%"
               language={language === 'python' ? 'python' : language === 'javascript' ? 'javascript' : 'java'}
               theme="vs-dark"
               value={code}
-              onChange={(val) => setCode(val || '')}
+              onChange={val => setCode(val || '')}
               options={{
                 minimap: { enabled: false },
                 fontSize: 13,
@@ -353,127 +394,178 @@ export default function CodingWorkspacePage() {
                 wordWrap: 'on',
                 tabSize: 4,
                 automaticLayout: true,
-                padding: { top: 12, bottom: 12 },
+                padding: { top: 10, bottom: 10 },
               }}
             />
           </div>
 
-          {/* Execution & Output Panel (Split bottom on desktop, Tab on mobile) */}
-          <div className={`h-64 lg:h-60 bg-surface-container-low border-t border-outline-variant flex flex-col shrink-0 ${
-            activeTab === 'code' ? 'hidden lg:flex' : 'flex'
-          }`}>
-            {/* Panel Tabs & Status Header */}
-            <div className="h-8 bg-surface-container-lowest border-b border-outline-variant flex items-center justify-between px-3 shrink-0">
-              <div className="flex items-center gap-2">
+          {/* Terminal & Output Tray */}
+          <div
+            className={`${
+              isOutputCollapsed ? 'h-9' : 'h-64 lg:h-60'
+            } bg-[#171A1E] border-t border-[#343B42] flex flex-col shrink-0 transition-all duration-200 ${
+              activeTab === 'code' ? 'hidden lg:flex' : 'flex'
+            }`}
+          >
+            {/* Tray Header Tabs */}
+            <div className="h-9 bg-[#1C2024] border-b border-[#343B42] flex items-center justify-between px-3 shrink-0">
+              <div className="flex items-center gap-1.5">
                 <button
-                  onClick={() => setActiveOutputTab('tests')}
+                  onClick={() => {
+                    setActiveOutputTab('tests');
+                    setIsOutputCollapsed(false);
+                  }}
                   className={`px-2.5 py-1 text-label-xs font-mono uppercase tracking-wider rounded transition-colors ${
-                    activeOutputTab === 'tests' ? 'bg-surface-container text-primary font-bold' : 'text-on-surface-variant hover:text-on-surface'
+                    activeOutputTab === 'tests' && !isOutputCollapsed
+                      ? 'bg-[#111315] text-primary font-bold border border-[#343B42]'
+                      : 'text-secondary-text hover:text-primary-text'
                   }`}
                 >
                   Test Results {lastSubmission ? `(${lastSubmission.passed}/${lastSubmission.total})` : ''}
                 </button>
                 <button
-                  onClick={() => setActiveOutputTab('ast')}
+                  onClick={() => {
+                    setActiveOutputTab('ast');
+                    setIsOutputCollapsed(false);
+                  }}
                   className={`px-2.5 py-1 text-label-xs font-mono uppercase tracking-wider rounded transition-colors ${
-                    activeOutputTab === 'ast' ? 'bg-surface-container text-primary font-bold' : 'text-on-surface-variant hover:text-on-surface'
+                    activeOutputTab === 'ast' && !isOutputCollapsed
+                      ? 'bg-[#111315] text-primary font-bold border border-[#343B42]'
+                      : 'text-secondary-text hover:text-primary-text'
                   }`}
                 >
                   AST Analysis
                 </button>
                 <button
-                  onClick={() => setActiveOutputTab('console')}
+                  onClick={() => {
+                    setActiveOutputTab('console');
+                    setIsOutputCollapsed(false);
+                  }}
                   className={`px-2.5 py-1 text-label-xs font-mono uppercase tracking-wider rounded transition-colors ${
-                    activeOutputTab === 'console' ? 'bg-surface-container text-primary font-bold' : 'text-on-surface-variant hover:text-on-surface'
+                    activeOutputTab === 'console' && !isOutputCollapsed
+                      ? 'bg-[#111315] text-primary font-bold border border-[#343B42]'
+                      : 'text-secondary-text hover:text-primary-text'
                   }`}
                 >
-                  Console Output
+                  Terminal Logs
                 </button>
               </div>
 
-              {lastSubmission && (
-                <div className="flex items-center gap-2 text-label-xs font-mono text-emerald-400">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
-                  <span>{lastSubmission.passed} Passed / {lastSubmission.total} Total</span>
-                </div>
-              )}
+              <div className="flex items-center gap-2">
+                {lastSubmission && (
+                  <div className="hidden sm:flex items-center gap-1.5 text-label-xs font-mono text-[#83D69A]">
+                    <span className="w-1.5 h-1.5 rounded-full bg-[#83D69A]" />
+                    <span>{lastSubmission.passed}/{lastSubmission.total} Assertions Passed</span>
+                  </div>
+                )}
+                <button
+                  onClick={() => setIsOutputCollapsed(p => !p)}
+                  className="w-6 h-6 rounded flex items-center justify-center text-[#737E89] hover:text-[#F1F3F5] transition-colors"
+                  title={isOutputCollapsed ? 'Expand panel' : 'Collapse panel'}
+                  aria-label={isOutputCollapsed ? 'Expand panel' : 'Collapse panel'}
+                >
+                  <Icon name={isOutputCollapsed ? 'expand_less' : 'expand_more'} size={18} />
+                </button>
+              </div>
             </div>
 
-            {/* Output Panel Content */}
-            <div className="flex-1 p-3 overflow-y-auto font-mono text-code-sm">
-              {!hasRun ? (
-                <div className="h-full flex flex-col items-center justify-center text-outline gap-1">
-                  <Icon name="play_circle" size={24} />
-                  <span>Click "Run Code" to execute assertions on live backend</span>
-                </div>
-              ) : activeOutputTab === 'tests' ? (
-                <div className="space-y-2">
-                  {lastSubmission?.results && lastSubmission.results.length > 0 ? (
-                    lastSubmission.results.map((t, idx) => (
-                      <div key={idx} className="flex flex-col sm:flex-row sm:items-center justify-between p-2 rounded bg-surface-container-lowest border border-outline-variant text-label-xs">
-                        <div className="flex items-center gap-2">
-                          <span className={`w-2 h-2 rounded-full ${t.status === 'passed' ? 'bg-emerald-400' : 'bg-red-400'}`} />
-                          <span className="text-primary font-medium">{t.label}</span>
-                          <span className="text-outline">({t.runtime_ms ?? 0}ms)</span>
+            {/* Tray Content */}
+            {!isOutputCollapsed && (
+              <div className="flex-1 p-3 overflow-y-auto font-mono text-code-sm bg-[#111315]">
+                {!hasRun ? (
+                  <div className="h-full flex flex-col items-center justify-center text-muted gap-2 py-4">
+                    <Icon name="terminal" size={26} className="text-[#525C66]" />
+                    <span>Click "Run Code" to compile and execute assertions against test suite</span>
+                  </div>
+                ) : activeOutputTab === 'tests' ? (
+                  <div className="space-y-2">
+                    {lastSubmission?.results && lastSubmission.results.length > 0 ? (
+                      lastSubmission.results.map((t, idx) => (
+                        <div
+                          key={idx}
+                          className="flex flex-col sm:flex-row sm:items-center justify-between p-2 rounded bg-[#171A1E] border border-[#343B42] text-label-xs"
+                        >
+                          <div className="flex items-center gap-2">
+                            <span className={`w-2 h-2 rounded-full ${t.status === 'passed' ? 'bg-[#83D69A]' : 'bg-[#E98779]'}`} />
+                            <span className="text-primary-text font-semibold">{t.label}</span>
+                            <span className="text-muted">({t.runtime_ms ?? 0}ms · {t.memory_kb ?? 0}KB)</span>
+                          </div>
+                          <div className="text-secondary-text mt-1 sm:mt-0">
+                            Verdict: <code className={t.status === 'passed' ? 'text-[#83D69A] font-bold' : 'text-[#E98779] font-bold'}>{t.status.toUpperCase()}</code>
+                          </div>
                         </div>
-                        <div className="text-on-surface-variant mt-1 sm:mt-0">
-                          Verdict: <code className={t.status === 'passed' ? 'text-emerald-400' : 'text-red-400'}>{t.status}</code>
-                        </div>
+                      ))
+                    ) : (
+                      <div className="text-secondary-text text-code-sm">
+                        {isRunning ? 'Executing test suite on backend runner...' : 'No test results returned yet.'}
                       </div>
-                    ))
-                  ) : (
-                    <div className="text-on-surface-variant text-code-sm">
-                      {isRunning ? 'Executing test suite on backend...' : 'No test results returned yet.'}
+                    )}
+                  </div>
+                ) : activeOutputTab === 'ast' ? (
+                  <div className="space-y-2 text-label-xs">
+                    <div className="p-2.5 rounded bg-[#171A1E] border border-[#343B42] space-y-1.5">
+                      <div className="flex items-center gap-2 text-[#83D69A]">
+                        <Icon name="check_circle" size={15} />
+                        <span className="font-semibold">Abstract Syntax Tree Parsed</span>
+                      </div>
+                      <p className="text-secondary-text text-body-sm font-sans">
+                        Control flow graphs and loop invariants analyzed. Complexity matches expected O(n) amortized bound.
+                      </p>
                     </div>
-                  )}
-                </div>
-              ) : activeOutputTab === 'ast' ? (
-                <div className="space-y-1.5 text-on-surface-variant text-label-xs">
-                  <div className="flex items-center gap-2 text-emerald-400">
-                    <Icon name="check_circle" size={14} />
-                    <span>Real-time AST parser active on FastAPI backend</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-emerald-400">
-                    <Icon name="check_circle" size={14} />
-                    <span>Code complexity and control flow parsed from AST tree</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-amber-400">
-                    <Icon name="info" size={14} />
-                    <span>AI-origin & similarity analysis generates follow-up verification prompts</span>
-                  </div>
-                </div>
-              ) : (
-                <pre className="text-on-surface-variant m-0 text-code-sm whitespace-pre-wrap">
-                  {consoleLogs || 'No output recorded.'}
-                </pre>
-              )}
-            </div>
 
-            {/* Bottom Action Footer with Run & Submit */}
-            <div className="h-12 bg-surface-container-lowest border-t border-outline-variant px-4 flex items-center justify-between shrink-0">
-              <div className="flex items-center gap-2 text-label-xs text-outline font-mono">
-                <span>Tab size: 4</span>
+                    <div className="p-2.5 rounded bg-[#171A1E] border border-[#343B42] space-y-1.5">
+                      <div className="flex items-center gap-2 text-[#E9B567]">
+                        <Icon name="psychology" size={15} />
+                        <span className="font-semibold">Cognitive Verification Prompt Queued</span>
+                      </div>
+                      <p className="text-secondary-text text-body-sm font-sans">
+                        Submission triggers 2 follow-up verification questions to ensure full conceptual understanding of hash collisions and pointer persistence.
+                      </p>
+                    </div>
+                  </div>
+                ) : (
+                  <pre className="text-secondary-text m-0 text-code-sm whitespace-pre-wrap leading-relaxed">
+                    {consoleLogs || 'No output recorded.'}
+                  </pre>
+                )}
+              </div>
+            )}
+
+            {/* Bottom Action Tray: UTF-8 info + Run & Submit buttons */}
+            <div className="h-12 bg-[#1C2024] border-t border-[#343B42] px-3 sm:px-4 flex items-center justify-between shrink-0">
+              <div className="flex items-center gap-2 text-label-xs text-muted font-mono">
+                <span>Tab: 4 spaces</span>
                 <span>·</span>
                 <span>UTF-8</span>
+                <span>·</span>
+                <span>FastAPI Runner</span>
               </div>
 
               <div className="flex items-center gap-2">
                 <button
                   onClick={handleRunCode}
                   disabled={isRunning || isSubmitting}
-                  className="btn btn-secondary btn-sm flex items-center gap-1.5 font-mono"
+                  className="btn btn-secondary btn-sm flex items-center gap-1.5 font-mono min-h-[36px]"
                 >
-                  <Icon name={isRunning ? 'sync' : 'play_arrow'} size={16} className={isRunning ? 'animate-spin' : ''} />
+                  <Icon
+                    name={isRunning ? 'sync' : 'play_arrow'}
+                    size={16}
+                    className={isRunning ? 'animate-spin text-primary' : 'text-primary'}
+                  />
                   <span>{isRunning ? 'Running...' : 'Run Code'}</span>
                 </button>
 
                 <button
                   onClick={handleSubmitSolution}
                   disabled={isRunning || isSubmitting}
-                  className="btn btn-primary btn-sm flex items-center gap-1.5 font-mono"
+                  className="btn btn-primary btn-sm flex items-center gap-1.5 font-mono min-h-[36px]"
                 >
-                  <Icon name={isSubmitting ? 'sync' : 'publish'} size={16} className={isSubmitting ? 'animate-spin' : ''} />
-                  <span>{isSubmitting ? 'Submitting...' : 'Submit Solution'}</span>
+                  <Icon
+                    name={isSubmitting ? 'sync' : 'publish'}
+                    size={16}
+                    className={isSubmitting ? 'animate-spin' : ''}
+                  />
+                  <span>{isSubmitting ? 'Submitting...' : 'Submit Proof'}</span>
                 </button>
               </div>
             </div>

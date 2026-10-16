@@ -29,40 +29,54 @@ export default function LoginPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
-    if (!email) { setError('Email is required'); return; }
+    if (!email) {
+      setError('Email address is required');
+      return;
+    }
     try {
       const loggedInUser = await login(email, password, role);
       if (loggedInUser.role === 'teacher') navigate('/teacher/dashboard');
       else if (loggedInUser.role === 'admin') navigate('/admin/users');
       else navigate('/dashboard');
     } catch (err: any) {
-      setError(err?.message || 'Invalid credentials. Please verify backend is running.');
+      setError(err?.message || 'Authentication failed. Please verify FastAPI backend status.');
     }
   };
 
   return (
-    <div style={{ minHeight: 'calc(100vh - 3rem)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '2rem 1rem' }}>
-      <div style={{ width: '100%', maxWidth: '24rem' }}>
-        <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', marginBottom: '1rem' }}>
-            <Icon name="terminal" size={24} className="text-primary" />
-            <span className="text-headline-md text-primary font-bold">Congnicode</span>
+    <div className="flex-1 flex items-center justify-center p-4 sm:p-8 animate-fade-in">
+      <div className="w-full max-w-md space-y-6">
+        {/* Brand Header */}
+        <div className="text-center space-y-2">
+          <div className="w-12 h-12 rounded-lg bg-[#1C2024] border border-[#343B42] flex items-center justify-center text-primary mx-auto shadow-md">
+            <Icon name="terminal" size={24} />
           </div>
-          <h1 className="text-headline-sm text-on-surface" style={{ marginBottom: '0.25rem' }}>Sign in to your account</h1>
-          <p className="text-body-md text-on-surface-variant">Don't just write code. Prove you understand it.</p>
+          <h1 className="text-headline-md font-bold text-primary-text tracking-tight">
+            Sign in to Congnicode
+          </h1>
+          <p className="text-body-sm text-secondary-text">
+            Don't just write code. Prove you understand it.
+          </p>
         </div>
 
-        <div className="card" style={{ padding: '1.5rem' }}>
-          {/* Demo role selector */}
-          <div style={{ marginBottom: '1.25rem', padding: '0.75rem', backgroundColor: 'var(--color-surface-container)', borderRadius: 'var(--radius)', border: '1px solid var(--color-outline-variant)' }}>
-            <p className="text-label-xs text-outline" style={{ marginBottom: '0.5rem' }}>DEMO — Select role to test</p>
-            <div style={{ display: 'flex', gap: '0.375rem', flexWrap: 'wrap' }}>
+        {/* Card */}
+        <div className="card p-6 bg-[#1C2024] border-[#343B42] shadow-xl space-y-5">
+          {/* Demo Persona Quick Select */}
+          <div className="p-3 bg-[#171A1E] rounded border border-[#343B42] space-y-2 font-mono">
+            <span className="text-[11px] text-muted uppercase font-bold tracking-wider block">
+              QUICK TEST PERSONA
+            </span>
+            <div className="grid grid-cols-3 gap-2">
               {(['learner', 'teacher', 'admin'] as UserRole[]).map(r => (
                 <button
                   key={r}
-                  className={`btn btn-sm ${role === r ? 'btn-primary' : 'btn-secondary'}`}
-                  onClick={() => handleSelectRole(r)}
                   type="button"
+                  onClick={() => handleSelectRole(r)}
+                  className={`py-1.5 px-2 rounded text-label-xs uppercase font-semibold transition-colors border text-center ${
+                    role === r
+                      ? 'bg-primary/15 text-primary border-primary/50'
+                      : 'bg-[#1C2024] text-secondary-text border-[#343B42] hover:text-primary-text'
+                  }`}
                 >
                   {r}
                 </button>
@@ -70,50 +84,77 @@ export default function LoginPage() {
             </div>
           </div>
 
-          <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-            <div>
-              <label className="text-label-sm text-on-surface-variant" style={{ display: 'block', marginBottom: '0.375rem' }}>Email</label>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="space-y-1.5">
+              <label className="text-label-xs font-mono text-secondary-text block">
+                Email Address
+              </label>
               <input
-                className="input"
+                className="input font-mono text-code-sm"
                 type="email"
                 value={email}
                 onChange={e => setEmail(e.target.value)}
-                placeholder="you@example.com"
+                placeholder="developer@congnicode.dev"
                 autoComplete="email"
                 required
               />
             </div>
-            <div>
-              <label className="text-label-sm text-on-surface-variant" style={{ display: 'block', marginBottom: '0.375rem' }}>
-                Password
-                <Link to="/forgot-password" className="text-on-surface-variant" style={{ float: 'right', textDecoration: 'none', fontSize: '0.75rem' }}>
+
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between">
+                <label className="text-label-xs font-mono text-secondary-text">
+                  Password
+                </label>
+                <Link
+                  to="/forgot-password"
+                  className="text-[11px] font-mono text-primary hover:underline"
+                >
                   Forgot password?
                 </Link>
-              </label>
+              </div>
               <input
-                className="input"
+                className="input font-mono text-code-sm"
                 type="password"
                 value={password}
                 onChange={e => setPassword(e.target.value)}
-                placeholder="Any password for demo"
+                placeholder="••••••••••••"
                 autoComplete="current-password"
+                required
               />
             </div>
+
             {error && (
-              <div className="badge badge-error" style={{ padding: '0.5rem 0.75rem' }}>
-                <Icon name="error" size={14} /> {error}
+              <div className="p-3 rounded bg-[#E98779]/15 border border-[#E98779]/30 text-[#E98779] text-label-xs font-mono flex items-center gap-2">
+                <Icon name="error" size={16} />
+                <span>{error}</span>
               </div>
             )}
-            <button className="btn btn-primary w-full" type="submit" disabled={loading} style={{ justifyContent: 'center', width: '100%' }}>
-              {loading ? <Spinner size={16} /> : <Icon name="login" size={16} />}
-              {loading ? 'Signing in...' : 'Sign In'}
+
+            <button
+              type="submit"
+              disabled={loading}
+              className="btn btn-primary w-full py-2.5 font-mono text-label-sm uppercase tracking-wider justify-center shadow-lg shadow-primary/20"
+            >
+              {loading ? (
+                <>
+                  <Spinner size={16} />
+                  <span>Authenticating...</span>
+                </>
+              ) : (
+                <>
+                  <Icon name="login" size={18} />
+                  <span>Sign In</span>
+                </>
+              )}
             </button>
           </form>
         </div>
 
-        <p className="text-body-sm text-on-surface-variant" style={{ textAlign: 'center', marginTop: '1rem' }}>
-          Don't have an account?{' '}
-          <Link to="/signup" style={{ color: 'var(--color-primary)', textDecoration: 'none' }}>Sign Up</Link>
+        <p className="text-center text-body-sm text-secondary-text">
+          Don't have an account yet?{' '}
+          <Link to="/signup" className="text-primary font-semibold hover:underline">
+            Create an Account
+          </Link>
         </p>
       </div>
     </div>

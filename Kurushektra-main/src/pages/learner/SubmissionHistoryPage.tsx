@@ -18,17 +18,19 @@ export default function SubmissionHistoryPage() {
   }, [search, statusFilter, languageFilter]);
 
   return (
-    <div className="max-w-5xl mx-auto space-y-6">
+    <div className="max-w-5xl mx-auto space-y-6 animate-fade-in">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-outline-variant">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-[#343B42]">
         <div>
-          <div className="flex items-center gap-2 text-label-xs font-mono text-outline uppercase mb-1">
+          <div className="flex items-center gap-2 text-label-xs font-mono text-muted uppercase mb-1">
             <span>Learner</span>
             <span>/</span>
-            <span>Audit Trail</span>
+            <span className="text-primary-text font-bold">Audit Ledger</span>
           </div>
-          <h1 className="text-headline-lg text-primary font-bold">Submission History</h1>
-          <p className="text-body-sm text-on-surface-variant">
+          <h1 className="text-headline-lg font-bold text-primary-text tracking-tight">
+            Submission History
+          </h1>
+          <p className="text-body-sm text-secondary-text mt-0.5">
             Full record of execution runs, test assertions, and diagnostic submissions
           </p>
         </div>
@@ -36,15 +38,15 @@ export default function SubmissionHistoryPage() {
       </div>
 
       {/* Filter and Search Bar */}
-      <div className="card p-4 bg-surface-container-low border border-outline-variant flex flex-col md:flex-row gap-3">
-        <div className="flex-1 relative">
-          <Icon name="search" size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-outline" />
+      <div className="card p-3 sm:p-4 bg-[#1C2024] border-[#343B42] flex flex-col md:flex-row gap-3">
+        <div className="flex-1 relative flex items-center bg-[#111315] border border-[#343B42] rounded px-3 py-1.5 focus-within:border-primary transition-colors">
+          <Icon name="search" size={16} className="text-muted mr-2" />
           <input
             type="text"
             placeholder="Search by challenge title..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full bg-surface-container-lowest border border-outline-variant rounded pl-10 pr-4 py-2 text-body-sm text-primary placeholder:text-outline focus:outline-none focus:border-outline font-mono"
+            className="w-full bg-transparent border-none outline-none text-body-sm text-primary-text placeholder-muted font-mono"
           />
         </div>
 
@@ -52,9 +54,9 @@ export default function SubmissionHistoryPage() {
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
-            className="bg-surface-container-lowest border border-outline-variant rounded px-3 py-2 text-label-sm text-primary font-mono focus:outline-none focus:border-outline cursor-pointer"
+            className="bg-[#111315] border border-[#343B42] rounded px-3 py-1.5 text-label-xs text-primary font-mono focus:border-primary cursor-pointer outline-none min-h-[36px]"
           >
-            <option value="all">All Statuses</option>
+            <option value="all">All Verdicts</option>
             <option value="accepted">Accepted</option>
             <option value="wrong_answer">Wrong Answer</option>
             <option value="timeout">Timeout</option>
@@ -63,7 +65,7 @@ export default function SubmissionHistoryPage() {
           <select
             value={languageFilter}
             onChange={(e) => setLanguageFilter(e.target.value)}
-            className="bg-surface-container-lowest border border-outline-variant rounded px-3 py-2 text-label-sm text-primary font-mono focus:outline-none focus:border-outline cursor-pointer"
+            className="bg-[#111315] border border-[#343B42] rounded px-3 py-1.5 text-label-xs text-primary font-mono focus:border-primary cursor-pointer outline-none min-h-[36px]"
           >
             <option value="all">All Languages</option>
             <option value="python">Python</option>
@@ -74,42 +76,42 @@ export default function SubmissionHistoryPage() {
       </div>
 
       {/* Desktop Table View */}
-      <div className="card bg-surface-container-low border border-outline-variant overflow-hidden hidden md:block">
-        <table className="w-full text-left font-mono text-label-xs">
-          <thead className="bg-surface-container-lowest border-b border-outline-variant text-outline uppercase tracking-wider">
+      <div className="card bg-[#1C2024] border-[#343B42] overflow-hidden hidden md:block">
+        <table className="data-table">
+          <thead>
             <tr>
-              <th className="py-3 px-4">Challenge</th>
-              <th className="py-3 px-4">Status</th>
-              <th className="py-3 px-4">Language</th>
-              <th className="py-3 px-4">Tests</th>
-              <th className="py-3 px-4">Runtime</th>
-              <th className="py-3 px-4">Submitted</th>
-              <th className="py-3 px-4 text-right">Action</th>
+              <th>Challenge</th>
+              <th>Verdict</th>
+              <th>Language</th>
+              <th>Assertions</th>
+              <th>Runtime</th>
+              <th>Timestamp</th>
+              <th className="text-right">Action</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-outline-variant/50">
+          <tbody>
             {filtered.map(s => (
-              <tr key={s.id} className="hover:bg-surface-container-high/40 transition-colors">
-                <td className="py-3.5 px-4">
-                  <span className="text-body-sm text-primary font-semibold font-sans block">{s.challengeTitle}</span>
-                  <span className="text-outline text-label-xs font-mono">{s.id}</span>
+              <tr key={s.id}>
+                <td>
+                  <span className="text-body-sm text-primary-text font-bold block">{s.challengeTitle}</span>
+                  <span className="text-muted text-label-xs font-mono">{s.id}</span>
                 </td>
-                <td className="py-3.5 px-4">
+                <td>
                   <StatusBadge status={s.status} />
                 </td>
-                <td className="py-3.5 px-4 uppercase text-on-surface-variant">
+                <td className="uppercase text-secondary-text font-mono">
                   {s.language}
                 </td>
-                <td className="py-3.5 px-4 text-on-surface-variant">
+                <td className="text-secondary-text font-mono">
                   {s.testsPassed} / {s.testsTotal}
                 </td>
-                <td className="py-3.5 px-4 text-on-surface-variant">
-                  {s.runtime ? `${s.runtime} ms` : '—'}
+                <td className="text-[#83D69A] font-mono">
+                  {s.runtime ? `${s.runtime}ms` : '—'}
                 </td>
-                <td className="py-3.5 px-4 text-outline font-sans">
+                <td className="text-muted font-sans">
                   {new Date(s.submittedAt).toLocaleDateString()}
                 </td>
-                <td className="py-3.5 px-4 text-right">
+                <td className="text-right">
                   <Link
                     to={`/submissions/${s.id}`}
                     className="btn btn-ghost btn-sm text-label-xs font-mono inline-flex items-center gap-1"
@@ -127,27 +129,29 @@ export default function SubmissionHistoryPage() {
       {/* Mobile Card List View */}
       <div className="space-y-3 md:hidden">
         {filtered.map(s => (
-          <div key={s.id} className="card p-4 bg-surface-container-low border border-outline-variant space-y-3">
-            <div className="flex items-start justify-between">
+          <div key={s.id} className="card p-4 bg-[#1C2024] border-[#343B42] space-y-3">
+            <div className="flex items-start justify-between gap-2">
               <div>
-                <h3 className="text-body-md font-semibold text-primary">{s.challengeTitle}</h3>
-                <span className="text-label-xs font-mono text-outline">{s.id} · {s.language.toUpperCase()}</span>
+                <h3 className="text-body-md font-bold text-primary-text">{s.challengeTitle}</h3>
+                <span className="text-label-xs font-mono text-muted">{s.id} · {s.language.toUpperCase()}</span>
               </div>
               <StatusBadge status={s.status} />
             </div>
 
-            <div className="grid grid-cols-2 gap-2 text-label-xs font-mono text-on-surface-variant pt-2 border-t border-outline-variant">
-              <span>Tests: <strong className="text-primary">{s.testsPassed}/{s.testsTotal}</strong></span>
-              <span>Runtime: <strong className="text-primary">{s.runtime ? `${s.runtime}ms` : '—'}</strong></span>
+            <div className="grid grid-cols-2 gap-2 text-label-xs font-mono text-secondary-text pt-2 border-t border-[#343B42]">
+              <span>Tests: <strong className="text-primary-text">{s.testsPassed}/{s.testsTotal}</strong></span>
+              <span>Runtime: <strong className="text-[#83D69A]">{s.runtime ? `${s.runtime}ms` : '—'}</strong></span>
             </div>
 
-            <Link
-              to={`/submissions/${s.id}`}
-              className="btn btn-secondary btn-sm font-mono text-label-xs w-full text-center flex items-center justify-center gap-1.5"
-            >
-              <span>View Full Diagnostic</span>
-              <Icon name="arrow_forward" size={14} />
-            </Link>
+            <div className="pt-1">
+              <Link
+                to={`/submissions/${s.id}`}
+                className="btn btn-secondary btn-sm w-full justify-center font-mono"
+              >
+                <span>Inspect Results & Assessment</span>
+                <Icon name="arrow_forward" size={14} />
+              </Link>
+            </div>
           </div>
         ))}
       </div>
