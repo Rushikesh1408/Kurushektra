@@ -1,0 +1,22 @@
+# CodeArena backend dependencies.
+#
+# NOTE ON PINS (documented environment adaptation):
+# The original Phase-3 pins are preserved in `requirements.lock.txt` and remain the
+# intended production set (chosen against Python 3.12). This development machine only
+# has Python 3.14, for which several of those exact versions publish no prebuilt wheel
+# (notably pydantic-core==2.27.2), and there is no Rust toolchain to build them from
+# source. The versions below are the closest releases that DO ship cp314 wheels so the
+# project can be installed and tested here. For production on Python 3.12, install
+# `requirements.lock.txt` instead.
+fastapi==0.143.0
+uvicorn[standard]==0.54.0
+pydantic[email]==2.14.1
+pydantic-settings==2.15.0
+SQLAlchemy==2.1.4
+alembic==1.20.0
+psycopg[binary]==3.3.6
+argon2-cffi==25.1.0
+PyJWT==2.15.1
+slowapi==0.1.10
+httpx==0.28.1
+pytest==9.1.1
