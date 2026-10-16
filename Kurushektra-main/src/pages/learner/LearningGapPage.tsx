@@ -1,15 +1,40 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { Icon, CodeBlock, SimulatedDemoLabel } from '../../components/ui';
 import { mockGaps, mockPractice } from '../../data/mockData';
+import { api } from '../../services/api';
 
 export default function LearningGapPage() {
   const { id } = useParams<{ id: string }>();
 
-  const gap = mockGaps.find(g => g.id === id) || mockGaps[0];
+  const [gap, setGap] = useState(mockGaps.find(g => g.id === id) || mockGaps[0]);
   const relatedPractice = mockPractice.find(p => p.gapId === gap.id) || mockPractice[0];
 
   const [activeStep, setActiveStep] = useState(0);
+
+  useEffect(() => {
+    let mounted = true;
+    async function fetchGaps() {
+      try {
+        const gaps = await api.adaptive.gaps();
+        if (mounted && gaps && gaps.length > 0) {
+          const found = gaps.find(g => g.target_slug === id || g.target_concept === id) || gaps[0];
+          setGap(prev => ({
+            ...prev,
+            concept: found.target_concept,
+            severity: found.root_mastery < 0.3 ? 'high' : 'medium',
+            description: `${found.reason} Root prerequisite gap: ${found.root_gap_concept} (Mastery: ${Math.round(found.root_mastery * 100)}%). Recommended practice: ${found.recommended_practice}`,
+          }));
+        }
+      } catch (err) {
+        console.warn('Could not fetch adaptive gaps from backend:', err);
+      }
+    }
+    fetchGaps();
+    return () => {
+      mounted = false;
+    };
+  }, [id]);
 
   const walkthroughSteps = [
     {

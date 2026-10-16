@@ -1,11 +1,59 @@
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { Icon, ProgressBar, SimulatedDemoLabel, SectionHeader, MetricCard, MasteryBadge } from '../../components/ui';
 import { mockMastery, mockGaps } from '../../data/mockData';
+import { api } from '../../services/api';
 
 export default function DashboardPage() {
   const { user } = useAuth();
-  const topMastery = mockMastery.slice(0, 4);
+  const [masteryData, setMasteryData] = useState(mockMastery);
+  const [gapList, setGapList] = useState(mockGaps);
+
+  useEffect(() => {
+    let mounted = true;
+    async function loadDashboardData() {
+      try {
+        const [mRes, gRes] = await Promise.allSettled([
+          api.adaptive.mastery(),
+          api.adaptive.gaps(),
+        ]);
+
+        if (mounted && mRes.status === 'fulfilled' && mRes.value.length > 0) {
+          const mapped = mRes.value.map(bm => ({
+            concept: bm.name,
+            level: bm.status as any,
+            percentage: Math.round(bm.mastery_score * 100),
+            confidence: bm.confidence > 0.7 ? ('high' as const) : bm.confidence > 0.4 ? ('medium' as const) : ('low' as const),
+            testsCompleted: bm.total_attempts,
+            testsTotal: Math.max(5, bm.total_attempts + 2),
+            lastAssessed: new Date().toISOString(),
+          }));
+          setMasteryData(mapped);
+        }
+
+        if (mounted && gRes.status === 'fulfilled' && gRes.value.length > 0) {
+          const mappedGaps = gRes.value.map((bg, idx) => ({
+            id: `gap-${idx}`,
+            concept: bg.target_concept,
+            severity: bg.root_mastery < 0.3 ? ('high' as const) : ('medium' as const),
+            description: `${bg.reason} Focus on prerequisite: ${bg.root_gap_concept}`,
+            relatedChallenges: [bg.target_slug],
+            resources: [{ type: 'article' as const, title: `${bg.root_gap_concept} Documentation`, url: '#' }],
+          }));
+          setGapList(mappedGaps);
+        }
+      } catch (err) {
+        console.warn('Could not load dashboard data from backend:', err);
+      }
+    }
+    loadDashboardData();
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  const topMastery = masteryData.slice(0, 4);
 
   return (
     <div className="animate-fade-in">
@@ -118,9 +166,9 @@ export default function DashboardPage() {
 
         {/* Weak concepts */}
         <div className="card" style={{ gridColumn: 'span 6', padding: '1.25rem' }}>
-          <SectionHeader icon="warning" title="Identified Weak Spots" subtitle="3 active gaps" />
+          <SectionHeader icon="warning" title="Identified Weak Spots" subtitle={`${gapList.length} active gaps`} />
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-            {mockGaps.map(gap => (
+            {gapList.map(gap => (
               <div key={gap.id} className="card-elevated" style={{ padding: '0.75rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.75rem' }}>
                 <div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.25rem' }}>

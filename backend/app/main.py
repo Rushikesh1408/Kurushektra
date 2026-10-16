@@ -2,7 +2,10 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from slowapi.middleware import SlowAPIMiddleware
 
-from app.api import admin, auth, challenges, demo, health, questions, reports, submissions
+from app.api import (
+    adaptive, admin, auth, challenges, comprehension, demo, health,
+    learning, questions, reports, submissions, sync, tutor,
+)
 from app.core.config import get_settings
 from app.core.errors import register_error_handlers
 from app.core.limiter import limiter
@@ -11,9 +14,9 @@ from app.core.limiter import limiter
 def create_app() -> FastAPI:
     settings = get_settings()
     app = FastAPI(
-        title="CodeArena API",
-        version="0.3.0",
-        description="Coding assessment platform. AI-origin analysis is experimental and never decides grades.",
+        title="COGNICODE API",
+        version="1.0.0",
+        description="AI-powered adaptive programming learning and code comprehension platform.",
     )
     app.state.limiter = limiter
     app.add_middleware(SlowAPIMiddleware)
@@ -36,7 +39,8 @@ def create_app() -> FastAPI:
 
     register_error_handlers(app)
     for r in (health.router, auth.router, challenges.router, submissions.router, admin.router,
-              reports.router, questions.router, demo.router):
+              reports.router, questions.router, demo.router, learning.router, adaptive.router,
+              comprehension.router, tutor.router, sync.router):
         app.include_router(r, prefix="/api/v1")
     return app
 

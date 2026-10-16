@@ -1,0 +1,10 @@
+{
+  "name": "kurushektra-workspace",
+  "private": true,
+  "scripts": {
+    "dev": "npm --prefix Kurushektra-main run dev",
+    "dev:frontend": "npm --prefix Kurushektra-main run dev",
+    "dev:backend": "cd backend && python -m uvicorn app.main:app --reload --port 8000",
+    "build": "npm --prefix Kurushektra-main run build"
+  }
+}

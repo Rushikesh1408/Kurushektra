@@ -1,21 +1,77 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Icon, MasteryBadge, ProgressBar, SimulatedDemoLabel } from '../../components/ui';
 import { mockMastery, mockGaps } from '../../data/mockData';
+import { api } from '../../services/api';
 
 export default function MasteryPathPage() {
   const [filter, setFilter] = useState<'all' | 'mastered' | 'demonstrated' | 'developing' | 'not_started'>('all');
+  const [masteryList, setMasteryList] = useState(mockMastery);
+  const [activeGaps, setActiveGaps] = useState(mockGaps);
 
-  const filteredMastery = mockMastery.filter(m => filter === 'all' || m.level === filter);
+  useEffect(() => {
+    let mounted = true;
+    async function loadAdaptiveData() {
+      try {
+        const [backendMastery, backendGaps] = await Promise.allSettled([
+          api.adaptive.mastery(),
+          api.adaptive.gaps(),
+        ]);
+
+        if (mounted && backendMastery.status === 'fulfilled' && backendMastery.value.length > 0) {
+          const mapped = backendMastery.value.map(bm => {
+            const pct = Math.round(bm.mastery_score * 100);
+            const level: 'mastered' | 'demonstrated' | 'developing' | 'not_started' =
+              bm.status === 'mastered' ? 'mastered' :
+              bm.status === 'demonstrated' ? 'demonstrated' :
+              bm.status === 'developing' ? 'developing' : 'not_started';
+            const confidenceStr: 'high' | 'medium' | 'low' =
+              bm.confidence > 0.75 ? 'high' : bm.confidence > 0.4 ? 'medium' : 'low';
+
+            return {
+              concept: bm.name,
+              level,
+              percentage: pct,
+              confidence: confidenceStr,
+              testsCompleted: bm.total_attempts,
+              testsTotal: Math.max(5, bm.total_attempts + 2),
+              lastAssessed: new Date().toISOString(),
+            };
+          });
+          setMasteryList(mapped);
+        }
+
+        if (mounted && backendGaps.status === 'fulfilled' && backendGaps.value.length > 0) {
+          const mappedGaps = backendGaps.value.map((bg, idx) => ({
+            id: `gap-${idx}`,
+            concept: bg.target_concept,
+            severity: bg.root_mastery < 0.3 ? ('high' as const) : ('medium' as const),
+            description: `${bg.reason} Root prerequisite gap: ${bg.root_gap_concept} (Mastery: ${Math.round(bg.root_mastery * 100)}%). Recommended practice: ${bg.recommended_practice}`,
+            relatedChallenges: [bg.target_slug],
+            resources: [{ type: 'article' as const, title: `${bg.root_gap_concept} Documentation`, url: '#' }],
+          }));
+          setActiveGaps(mappedGaps);
+        }
+      } catch (err) {
+        console.warn('Could not fetch adaptive mastery from backend:', err);
+      }
+    }
+    loadAdaptiveData();
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  const filteredMastery = masteryList.filter(m => filter === 'all' || m.level === filter);
 
   // Overall aggregate
-  const totalConcepts = mockMastery.length;
-  const masteredCount = mockMastery.filter(m => m.level === 'mastered').length;
-  const demonstratedCount = mockMastery.filter(m => m.level === 'demonstrated').length;
-  const developingCount = mockMastery.filter(m => m.level === 'developing').length;
-  const overallPct = Math.round(
-    mockMastery.reduce((acc, m) => acc + m.percentage, 0) / totalConcepts
-  );
+  const totalConcepts = masteryList.length;
+  const masteredCount = masteryList.filter(m => m.level === 'mastered').length;
+  const demonstratedCount = masteryList.filter(m => m.level === 'demonstrated').length;
+  const developingCount = masteryList.filter(m => m.level === 'developing').length;
+  const overallPct = totalConcepts > 0
+    ? Math.round(masteryList.reduce((acc, m) => acc + m.percentage, 0) / totalConcepts)
+    : 0;
 
   return (
     <div className="max-w-5xl mx-auto space-y-6">
@@ -69,18 +125,18 @@ export default function MasteryPathPage() {
       </div>
 
       {/* Active Learning Gaps Callout */}
-      {mockGaps.length > 0 && (
+      {activeGaps.length > 0 && (
         <div className="card p-5 bg-surface-container-low border border-outline-variant space-y-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Icon name="warning" size={18} className="text-amber-400" />
               <h2 className="text-headline-sm text-primary font-semibold">Active Learning Gaps Requiring Remediation</h2>
             </div>
-            <span className="badge badge-warning text-label-xs font-mono">{mockGaps.length} Action Items</span>
+            <span className="badge badge-warning text-label-xs font-mono">{activeGaps.length} Action Items</span>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-            {mockGaps.map(g => (
+            {activeGaps.map(g => (
               <div key={g.id} className="p-4 bg-surface-container-lowest rounded border border-outline-variant flex flex-col justify-between gap-3">
                 <div>
                   <div className="flex items-center justify-between mb-1">
@@ -123,7 +179,7 @@ export default function MasteryPathPage() {
           ))}
         </div>
         <span className="text-label-xs font-mono text-outline shrink-0">
-          Showing {filteredMastery.length} of {mockMastery.length} concepts
+          Showing {filteredMastery.length} of {masteryList.length} concepts
         </span>
       </div>
 

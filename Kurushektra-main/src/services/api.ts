@@ -217,6 +217,95 @@ export const api = {
     status: () => request<{ demo_mode: boolean; timestamp: string }>('/demo/status'),
     seed: () => request<{ status: string; message: string }>('/demo/seed', { method: 'POST' }),
   },
+
+  // Learning Evidence & Learning DNA
+  learning: {
+    timeline: (eventType?: string, conceptId?: string, page: number = 1, pageSize: number = 20) => {
+      const q = new URLSearchParams({ page: String(page), page_size: String(pageSize) });
+      if (eventType) q.append('event_type', eventType);
+      if (conceptId) q.append('concept_id', conceptId);
+      return request<{ items: Array<{ id: string; event_type: string; concept_id?: string; timestamp: string; metadata: Record<string, unknown> }>; total: number }>(`/learning/timeline?${q.toString()}`);
+    },
+    dna: () =>
+      request<{ student_id: string; patterns: Array<{ id: string; pattern_key: string; pattern_name: string; category: string; confidence: number; occurrence_count: number; status: string; remediation_advice?: string }>; active_count: number }>('/learning/dna'),
+    recordTelemetry: (payload: { challenge_id?: string; keystrokes?: number; paste_events?: number; paste_length?: number; time_spent_seconds?: number }) =>
+      request<{ status: string }>('/learning/telemetry', {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      }),
+  },
+
+  // Adaptive Learning & Concept Mastery
+  adaptive: {
+    concepts: () =>
+      request<Array<{ concept_id: string; slug: string; name: string; category: string; difficulty: string; mastery_score: number; confidence: number; total_attempts: number; status: string }>>('/adaptive/concepts'),
+    mastery: () =>
+      request<Array<{ concept_id: string; slug: string; name: string; category: string; difficulty: string; mastery_score: number; confidence: number; total_attempts: number; status: string }>>('/adaptive/mastery'),
+    gaps: () =>
+      request<Array<{ target_concept: string; target_slug: string; current_mastery: number; root_gap_concept: string; root_gap_slug: string; root_mastery: number; reason: string; recommended_practice: string }>>('/adaptive/gaps'),
+    revisions: () =>
+      request<{ due: Array<{ id: string; concept_id: string; concept_name: string; due_date: string; interval_days: number; status: string }>; upcoming: Array<{ id: string; concept_id: string; concept_name: string; due_date: string; interval_days: number; status: string }> }>('/adaptive/revisions'),
+    completeRevision: (conceptId: string, performanceRating: number) =>
+      request<{ status: string; next_due: string; interval_days: number }>((`/adaptive/revisions/${conceptId}/complete`), {
+        method: 'POST',
+        body: JSON.stringify({ performance_rating: performanceRating }),
+      }),
+  },
+
+  // Code Comprehension Tools
+  comprehension: {
+    evaluateViva: (payload: { submission_id: string; question_id: string; answer_text: string }) =>
+      request<{ score: number; feedback: string; dimensions: { correctness: number; reasoning: number; connection_to_solution: number; edge_cases: number }; source: string }>('/comprehension/viva/evaluate', {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      }),
+    getHint: (submissionId: string, hintLevel: number = 1) =>
+      request<{ hint_level: number; hint_title: string; hint_text: string; target_area?: string; next_level_available: boolean }>('/comprehension/hints', {
+        method: 'POST',
+        body: JSON.stringify({ submission_id: submissionId, hint_level: hintLevel }),
+      }),
+    getAlternatives: (submissionId: string) =>
+      request<{ submission_id: string; current_approach_summary: string; alternatives: Array<{ approach_name: string; description: string; time_complexity: string; space_complexity: string; code_example: string; trade_offs: string }> }>('/comprehension/alternatives', {
+        method: 'POST',
+        body: JSON.stringify({ submission_id: submissionId }),
+      }),
+    generatePrediction: (submissionId: string, targetConcept?: string) =>
+      request<{ task_id: string; original_code: string; modified_code: string; diff_summary: string; prompt: string; target_concept?: string }>('/comprehension/predictions/generate', {
+        method: 'POST',
+        body: JSON.stringify({ submission_id: submissionId, target_concept: targetConcept }),
+      }),
+    submitPrediction: (taskId: string, predictedOutput: string, explanation: string) =>
+      request<{ task_id: string; predicted_output: string; actual_output: string; is_correct: boolean; score: number; difference_explanation: string }>('/comprehension/predictions/submit', {
+        method: 'POST',
+        body: JSON.stringify({ task_id: taskId, predicted_output: predictedOutput, explanation }),
+      }),
+    explainFailure: (submissionId: string) =>
+      request<{ submission_id: string; failure_kind: string; summary: string; suspected_cause: string; suggested_fix: string }>('/comprehension/explain-failure', {
+        method: 'POST',
+        body: JSON.stringify({ submission_id: submissionId }),
+      }),
+  },
+
+  // Hybrid RAG Tutor
+  tutor: {
+    chat: (payload: { question: string; mode?: string; course?: string; context_submission_id?: string }) =>
+      request<{ mode: string; answer: string; citations: Array<{ chunk_id: string; source_title: string; course: string; snippet: string }>; has_sufficient_evidence: boolean; confidence: number }>('/tutor/chat', {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      }),
+    sources: (course?: string) =>
+      request<Array<{ id: string; title: string; course: string; topic: string; language: string; difficulty: string }>>(`/tutor/sources${course ? `?course=${course}` : ''}`),
+  },
+
+  // Offline Synchronization
+  sync: {
+    batch: (payload: { actions: Array<{ idempotency_key: string; action_type: string; payload: Record<string, unknown>; client_timestamp?: string }> }) =>
+      request<{ results: Array<{ idempotency_key: string; action_type: string; status: string; conflict: boolean; message: string }>; synced_count: number }>('/sync/batch', {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      }),
+  },
 };
 
 export default api;
+

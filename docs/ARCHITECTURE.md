@@ -97,34 +97,68 @@ Notes on the schema (`backend/app/models`, migration `0001_initial_schema`):
 - `challenges.is_fixture` marks seed/sample data so it can be told apart from real assessment data.
 - `refresh_tokens` stores a hash only.
 - `debugging_tasks` keeps `original_code` and `modified_code` apart from `submissions.source_code`, which is never edited.
+## COGNICODE Central AI Brain & Subsystems
 
-## Repository layout
+```mermaid
+flowchart TD
+    subgraph UI[React + TypeScript SPA (Kurushektra-main)]
+      CW[Coding Workspace]
+      LG[Learning Gap Radar]
+      MP[Mastery Path]
+      LR[Learner Report]
+      RT[RAG Tutor]
+      OFS[Offline Sync Manager]
+    end
 
+    subgraph API[FastAPI Gateway]
+      direction TB
+      AUTH[Auth & RBAC]
+      SUB[Submissions & Execution API]
+      COMP[Comprehension API]
+      ADAP[Adaptive Engine API]
+      LEVN[Learning Timeline & DNA API]
+      TUTR[Tutor API]
+      SYNC[Sync Endpoint]
+    end
+
+    subgraph Brain[Central COGNICODE BrainService]
+      direction TB
+      CTX[Context Builder & Permission Filter]
+      PROV[Provider Interface & Fallback Engine]
+      VIVA[Solution-Aware Viva]
+      EVAL[Rubric Answer Evaluator]
+      HINT[Progressive Hint Engine]
+      ALT[Alternative Solution Explorer]
+      PRED[Code Prediction Lab]
+      DIAG[Failure Diagnostic Engine]
+    end
+
+    subgraph AdaptiveSystem[Adaptive & Evidence Layer]
+      BKT[Bayesian Knowledge Tracing]
+      DAG[Concept Prerequisite DAG]
+      DNA[Personal Error DNA Engine]
+      SRS[Spaced-Repetition Scheduler]
+    end
+
+    subgraph Storage[PostgreSQL / SQLite Storage]
+      MIG[(Alembic Migrations)]
+      EVT[(Learning Events & DNA)]
+      MST[(Concepts, DAG, Mastery)]
+      KB[(Knowledge Docs & Chunks)]
+    end
+
+    UI --> API
+    API --> Brain
+    API --> AdaptiveSystem
+    Brain --> Storage
+    AdaptiveSystem --> Storage
 ```
-codearena/
-├── backend/
-│   ├── app/{core,api,models}/    config, DB, routers, SQLAlchemy models
-│   ├── alembic/                  migrations
-│   └── tests/                    pytest
-├── frontend/
-│   └── src/{components,pages,lib}/
-├── docs/ARCHITECTURE.md
-├── docker-compose.yml            db + api + web
-├── docker-compose.judge0.yml     sandbox (untested)
-└── .env.example
-```
 
-Planned additions: `backend/app/{services,workers,schemas}`, `backend/app/services/{execution,analysis,similarity,ai_origin,questions,debugging,scoring}`.
+### Architectural Principles
 
-## Plan
- 
-| Phase | Scope | Status |
-|---|---|---|
-| 1 | Architecture, schema, migration, design system, landing page | Done |
-| 2 | Auth (argon2, JWT access + refresh), RBAC, challenge CRUD, seed fixtures | Done |
-| 3 | Monaco workspace, submission API, Judge0 integration | Done (sandbox verified against a mock only) |
-| 4 | Static analysis, similarity, report endpoints | Done |
-| 5 | Follow-up question engine & student answering workflow, debugging engine | Question engine complete; debugging engine next |
-| 6 | Rubric scoring, teacher review, analytics | Rubrics & answer schema defined; scoring pipeline next |
-| 7 | Hardening, Playwright E2E, deployment docs | |
+1. **One Brain, Specialized Capabilities**: All AI-assisted features (viva generation, answer evaluation, progressive hints, code predictions, tutor chat) route through `app.brain.service.BrainService`.
+2. **Context Built from Trusted Records Only**: The context builder checks caller identity and strictly excludes hidden test cases, expected hidden answers, and other students' submissions.
+3. **Deterministic Core**: Code execution, grading, test results, and mastery estimates are calculated deterministically. AI interpretations are stored separately from authoritative records.
+4. **Resilient Fallback**: If LLM providers are unavailable or return malformed JSON, deterministic fallbacks ensure student progression is never blocked.
+5. **Idempotent Background Jobs & Safe Offline Sync**: Submissions and sync batches use idempotency keys to prevent duplicate execution or state corruption.
 
