@@ -1,0 +1,47 @@
+# UNTESTED in phase 1. Judge0 needs privileged containers to sandbox with isolate, which is exactly why it
+# must run on its own host/network and never share a network with the database. Review Judge0's own
+# hardening docs before exposing this anywhere. Only the API container should be able to reach it.
+services:
+  judge0-server:
+    image: judge0/judge0:1.13.1
+    environment: &j0env
+      AUTHN_HEADER: X-Auth-Token
+      AUTHN_TOKEN: ${JUDGE0_AUTH_TOKEN}
+      REDIS_HOST: judge0-redis
+      REDIS_PASSWORD: ${JUDGE0_REDIS_PASSWORD}
+      POSTGRES_HOST: judge0-db
+      POSTGRES_DB: judge0
+      POSTGRES_USER: judge0
+      POSTGRES_PASSWORD: ${JUDGE0_POSTGRES_PASSWORD}
+      ENABLE_NETWORK: "false"          # no network from student code
+      CPU_TIME_LIMIT: "5"
+      MAX_CPU_TIME_LIMIT: "5"
+      MEMORY_LIMIT: "128000"
+      MAX_MEMORY_LIMIT: "128000"
+      MAX_PROCESSES_AND_OR_THREADS: "30"
+      MAX_FILE_SIZE: "1024"
+    privileged: true
+    networks: [sandbox]
+    # Not published to the host. The API joins this network explicitly.
+    expose: ["2358"]
+  judge0-worker:
+    image: judge0/judge0:1.13.1
+    command: ["./scripts/workers"]
+    environment: *j0env
+    privileged: true
+    networks: [sandbox]
+  judge0-db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: judge0
+      POSTGRES_USER: judge0
+      POSTGRES_PASSWORD: ${JUDGE0_POSTGRES_PASSWORD}
+    networks: [sandbox]
+  judge0-redis:
+    image: redis:7-alpine
+    command: ["redis-server", "--requirepass", "${JUDGE0_REDIS_PASSWORD}"]
+    networks: [sandbox]
+
+networks:
+  sandbox:
+    name: codearena_sandbox
