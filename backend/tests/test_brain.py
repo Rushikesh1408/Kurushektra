@@ -129,3 +129,32 @@ def test_brain_explain_failure(client, db, teacher, student):
     diag = brain.explain_failure(db, sid, student)
     assert diag.failure_kind == FailureKind.RUNTIME_ERROR
     assert "Runtime Exception" in diag.summary
+
+
+def test_brain_provider_failure_falls_back_deterministically(client, db, teacher, student):
+    """When the AI provider throws an unexpected exception, BrainService falls back deterministically."""
+    from app.brain.provider import BrainProvider
+    from app.brain.schemas import ProgressiveHintOut
+
+    class FailingProvider(BrainProvider):
+        @property
+        def is_available(self) -> bool:
+            return True
+
+        def generate_structured(self, system_prompt, user_prompt, response_model):
+            raise RuntimeError("Simulated upstream provider outage / rate limit")
+
+    _, ch = setup_challenge(client, db, teacher)
+    sh = login(client, "student@example.com")
+    sid = submit(client, sh, ch["id"]).json()["id"]
+    drain(db, Fake(correct))
+
+    brain = BrainService(provider=FailingProvider())
+    hint = brain.progressive_hint(db, sid, HintLevel.CONCEPTUAL, student)
+    assert isinstance(hint, ProgressiveHintOut)
+    assert hint.reveals_hidden_tests is False
+    assert len(hint.hint_text) > 0
+
+    alts = brain.alternatives(db, sid, student)
+    assert len(alts.alternatives) >= 2
+
