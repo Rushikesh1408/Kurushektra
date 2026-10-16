@@ -2,7 +2,7 @@
 
 Coding assessment platform that asks whether a student can explain, modify, and debug their own code. AI-origin analysis is an optional experimental module and never affects scores.
 
-**Status: Phase 5 in progress.** Done: architecture, full schema + migration, authentication (argon2, short-lived JWT, rotating refresh cookie), backend role checks, challenge and hidden-test management, audit logging, seed fixtures, sign-in/register, challenge library, challenge detail, teacher challenge form, Monaco coding workspace (run, submit, custom input, history), submission API with job queue and worker, Judge0 adapter, static analysis & jscpd duplication detection, teacher analysis reports, and the follow-up question engine with student answer submission and evaluation-only data protection. In progress: debugging tasks, rubric scoring pipeline, and live sandbox validation. Nothing here is production-ready.
+**Status: Phase 5 in progress.** Done: architecture, full schema + migration, authentication (argon2, short-lived JWT, rotating refresh cookie), backend role checks, challenge and hidden-test management, audit logging, seed fixtures, sign-in/register, challenge library, challenge detail, teacher challenge form, Monaco coding workspace (run, submit, custom input, history), submission API with job queue and worker, Judge0 adapter, static analysis & jscpd duplication detection, teacher analysis reports, and the follow-up question engine with student answer submission and evaluation-only data protection. In progress: debugging tasks, rubric scoring pipeline, and live sandbox validation. Nothing here is production-ready..
 
 ## What's verified
 
