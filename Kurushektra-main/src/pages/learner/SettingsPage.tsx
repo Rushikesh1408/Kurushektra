@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Icon, SimulatedDemoLabel } from '../../components/ui';
-import { useAuth } from '../../contexts/AuthContext';
+import { useAuth } from '../../contexts/useAuth';
 import type { UserRole } from '../../types';
 
 export default function SettingsPage() {

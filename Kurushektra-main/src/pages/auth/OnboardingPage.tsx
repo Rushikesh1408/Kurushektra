@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../../contexts/AuthContext';
+import { useAuth } from '../../contexts/useAuth';
 import { Icon } from '../../components/ui';
 
 const GOALS = ['Get a job as a software engineer', 'Ace technical interviews', 'Improve problem-solving skills', 'Prepare for competitive programming', 'Learn DSA fundamentals'];

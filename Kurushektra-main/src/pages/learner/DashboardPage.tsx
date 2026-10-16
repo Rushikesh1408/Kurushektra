@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { useAuth } from '../../contexts/AuthContext';
+import { useAuth } from '../../contexts/useAuth';
 import { Icon, ProgressBar, SimulatedDemoLabel, SectionHeader, MetricCard, MasteryBadge } from '../../components/ui';
 import { mockMastery, mockGaps } from '../../data/mockData';
 import { api } from '../../services/api';

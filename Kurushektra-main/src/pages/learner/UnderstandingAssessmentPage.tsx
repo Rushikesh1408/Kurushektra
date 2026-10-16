@@ -56,10 +56,35 @@ export default function UnderstandingAssessmentPage() {
   }, []);
 
   useEffect(() => {
+    let ignore = false;
     if (submissionId) {
-      void loadQuestions(submissionId);
+      api.submissions.getQuestions(submissionId)
+        .then((qList) => {
+          if (ignore) return;
+          setQuestions(qList);
+          const existingAnswers: Record<string, BackendStudentAnswer> = {};
+          const drafts: Record<string, string> = {};
+          qList.forEach(q => {
+            if (q.answer) {
+              existingAnswers[q.id] = q.answer;
+              drafts[q.id] = q.answer.answer_text;
+            }
+          });
+          setSubmittedAnswers(existingAnswers);
+          setAnswerDrafts(prev => ({ ...drafts, ...prev }));
+          setLoading(false);
+        })
+        .catch((err: any) => {
+          if (ignore) return;
+          console.error('Failed to load assessment questions:', err);
+          setError(err?.message || 'Unable to retrieve follow-up questions from backend.');
+          setLoading(false);
+        });
     }
-  }, [submissionId, loadQuestions]);
+    return () => {
+      ignore = true;
+    };
+  }, [submissionId]);
 
   const handleRetry = () => {
     if (submissionId) {

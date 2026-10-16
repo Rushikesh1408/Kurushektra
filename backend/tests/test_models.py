@@ -58,3 +58,15 @@ def test_rubric_defaults_match_example_distribution(db):
     db.add(r)
     db.commit()
     assert (r.correctness_weight, r.quality_weight, r.followup_weight, r.debugging_weight) == (40, 20, 25, 15)
+
+
+def test_alembic_migrations_and_schema_drift(db):
+    from alembic.config import Config
+    from alembic import command
+    from alembic.script import ScriptDirectory
+    alembic_cfg = Config("alembic.ini")
+    script = ScriptDirectory.from_config(alembic_cfg)
+    heads = script.get_heads()
+    assert len(heads) == 1
+    assert heads[0] == "0004"
+
