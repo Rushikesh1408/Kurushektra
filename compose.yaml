@@ -39,7 +39,7 @@ services:
       dockerfile: Dockerfile
     restart: unless-stopped
     environment:
-      DATABASE_URL: postgresql+psycopg2://${POSTGRES_USER:-cognicode}:${POSTGRES_PASSWORD:-change_in_production_password}@postgres:5432/${POSTGRES_DB:-cognicode}
+      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-cognicode}:${POSTGRES_PASSWORD:-change_in_production_password}@postgres:5432/${POSTGRES_DB:-cognicode}
       JWT_SECRET: ${JWT_SECRET:-insecure-development-secret-change-in-production-min32chars}
       COOKIE_SECURE: ${COOKIE_SECURE:-false}
       CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost,http://localhost:5173,http://localhost:8080}
@@ -65,9 +65,12 @@ services:
     restart: unless-stopped
     command: ["python", "-m", "app.worker"]
     environment:
-      DATABASE_URL: postgresql+psycopg2://${POSTGRES_USER:-cognicode}:${POSTGRES_PASSWORD:-change_in_production_password}@postgres:5432/${POSTGRES_DB:-cognicode}
+      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-cognicode}:${POSTGRES_PASSWORD:-change_in_production_password}@postgres:5432/${POSTGRES_DB:-cognicode}
+      JWT_SECRET: ${JWT_SECRET:-insecure-development-secret-change-in-production-min32chars}
       JUDGE0_URL: http://sandbox:2358
       DEMO_MODE: ${DEMO_MODE:-false}
+    healthcheck:
+      disable: true
     networks:
       - backend_net
       - sandbox_net

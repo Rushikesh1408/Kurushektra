@@ -223,7 +223,8 @@ def test_per_user_active_job_cap(client, db, teacher, student):
     assert submit(client, sh, ch["id"]).status_code == 202
 
 
-def test_submit_endpoint_rate_limited(client, db, teacher, student):
+def test_submit_endpoint_rate_limited(client, db, teacher, student, monkeypatch):
+    monkeypatch.setattr("app.services.submissions.analyse_submission", lambda db, sub_id: None)
     _, ch = setup_challenge(client, db, teacher)
     sh = login(client, "student@example.com")
     codes = []
