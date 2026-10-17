@@ -3,6 +3,7 @@ import type { User, UserRole } from '../types';
 import { api, ApiError } from '../services/api';
 import type { BackendUser } from '../services/api';
 import { AuthContext } from './authContextDef';
+export { useAuth } from './useAuth';
 
 function mapBackendUser(bUser: BackendUser): User {
   const role: UserRole = bUser.role === 'teacher' ? 'teacher' : bUser.role === 'admin' ? 'admin' : 'learner';
