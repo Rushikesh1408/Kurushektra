@@ -19,7 +19,7 @@ export default function ForgotPasswordPage() {
     <div className="flex-1 flex items-center justify-center p-4 sm:p-8 animate-fade-in">
       <div className="w-full max-w-md space-y-6">
         <div className="text-center space-y-2">
-          <div className="w-12 h-12 rounded-lg bg-[#1C2024] border border-[#343B42] flex items-center justify-center text-primary mx-auto shadow-md">
+          <div className="w-12 h-12 rounded-lg bg-[#1C2022] border border-[#343A40] flex items-center justify-center text-primary mx-auto shadow-md">
             <Icon name="lock_reset" size={24} />
           </div>
           <h1 className="text-headline-md font-bold text-primary-text tracking-tight">
@@ -30,7 +30,7 @@ export default function ForgotPasswordPage() {
           </p>
         </div>
 
-        <div className="card p-6 bg-[#1C2024] border-[#343B42] shadow-xl">
+        <div className="card p-6 bg-[#1C2022] border-[#343A40] shadow-xl">
           {sent ? (
             <div className="text-center space-y-4 py-2">
               <div className="w-12 h-12 rounded-full bg-[#83D69A]/15 border border-[#83D69A]/30 flex items-center justify-center text-[#83D69A] mx-auto">

@@ -40,15 +40,15 @@ export function ActivityBar({ role, isExplorerOpen, onToggleExplorer }: Activity
 
   return (
     <div
-      className="hidden md:flex flex-col justify-between w-[52px] shrink-0 bg-[#0D0F11] border-r border-[#343B42] z-40 select-none"
+      className="hidden md:flex flex-col justify-between w-[52px] shrink-0 bg-[#0D0F11] border-r border-[#343A40] z-40 select-none"
       style={{ height: '100vh' }}
       aria-label="Activity Bar"
     >
       {/* Top Group: Logo & Primary Nav */}
       <div className="flex flex-col items-center">
         {/* Brand Terminal Mark */}
-        <div className="w-[52px] h-[48px] flex items-center justify-center border-b border-[#343B42]/50 text-primary">
-          <div className="w-8 h-8 rounded bg-[#1C2024] flex items-center justify-center border border-[#343B42] shadow-sm">
+        <div className="w-[52px] h-[48px] flex items-center justify-center border-b border-[#343A40]/50 text-primary">
+          <div className="w-8 h-8 rounded bg-[#1C2022] flex items-center justify-center border border-[#343A40] shadow-sm">
             <Icon name="terminal" size={20} className="text-primary" />
           </div>
         </div>

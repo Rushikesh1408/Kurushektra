@@ -66,7 +66,7 @@ export default function ChallengesPage() {
   return (
     <div className="space-y-5 animate-fade-in">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-[#343B42]">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-[#343A40]">
         <div>
           <div className="flex items-center gap-2">
             <h1 className="text-headline-lg font-bold text-primary-text tracking-tight">Challenge Catalog</h1>
@@ -101,9 +101,9 @@ export default function ChallengesPage() {
       </div>
 
       {/* Search & Filter Bar */}
-      <div className="card p-3 sm:p-4 bg-[#1C2024] border-[#343B42] flex flex-col md:flex-row gap-3 items-stretch md:items-center justify-between">
+      <div className="card p-3 sm:p-4 bg-[#1C2022] border-[#343A40] flex flex-col md:flex-row gap-3 items-stretch md:items-center justify-between">
         {/* Search Input */}
-        <div className="flex-1 relative flex items-center bg-[#111315] border border-[#343B42] rounded px-3 py-1.5 focus-within:border-primary transition-colors">
+        <div className="flex-1 relative flex items-center bg-[#111315] border border-[#343A40] rounded px-3 py-1.5 focus-within:border-primary transition-colors">
           <Icon name="search" size={16} className="text-[#737E89] mr-2" />
           <input
             className="bg-transparent border-none outline-none text-body-sm text-primary-text placeholder-[#737E89] w-full font-mono"
@@ -153,7 +153,7 @@ export default function ChallengesPage() {
               className={`px-2.5 py-1 rounded text-label-xs font-mono transition-colors border ${
                 selectedTag === tag
                   ? 'bg-primary/15 text-primary border-primary/40 font-semibold'
-                  : 'bg-[#1C2024] text-secondary-text border-[#343B42] hover:border-[#525C66]'
+                  : 'bg-[#1C2022] text-secondary-text border-[#343A40] hover:border-[#525C66]'
               }`}
             >
               #{tag}
@@ -162,7 +162,7 @@ export default function ChallengesPage() {
           {selectedTag && (
             <button
               onClick={() => setSelectedTag('')}
-              className="text-label-xs text-[#E98779] hover:underline font-mono ml-1"
+              className="text-label-xs text-[#E99AA4] hover:underline font-mono ml-1"
             >
               Clear tag
             </button>
@@ -192,7 +192,7 @@ export default function ChallengesPage() {
       ) : (
         <>
           {/* Desktop Table View (>= 768px) */}
-          <div className="hidden md:block card overflow-hidden bg-[#1C2024] border-[#343B42]">
+          <div className="hidden md:block card overflow-hidden bg-[#1C2022] border-[#343A40]">
             <table className="data-table">
               <thead>
                 <tr>
@@ -252,7 +252,7 @@ export default function ChallengesPage() {
             {filtered.map((c, i) => (
               <div
                 key={c.id}
-                className="card p-4 bg-[#1C2024] border-[#343B42] flex flex-col justify-between gap-3"
+                className="card p-4 bg-[#1C2022] border-[#343A40] flex flex-col justify-between gap-3"
               >
                 <div>
                   <div className="flex items-center justify-between gap-2 mb-1.5">
@@ -270,7 +270,7 @@ export default function ChallengesPage() {
                   </p>
                 </div>
 
-                <div className="flex items-center justify-between text-code-sm font-mono text-muted pt-2 border-t border-[#343B42]">
+                <div className="flex items-center justify-between text-code-sm font-mono text-muted pt-2 border-t border-[#343A40]">
                   <span className="text-[#83D69A]">{c.acceptanceRate}% Pass Rate</span>
                   <span>{c.timeComplexity}</span>
                 </div>

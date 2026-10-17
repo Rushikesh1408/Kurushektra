@@ -56,7 +56,7 @@ export default function OnboardingPage() {
               className={`w-full p-4 rounded-md text-left transition-all border flex flex-col gap-1 min-h-[48px] ${
                 level === l.id
                   ? 'bg-primary/10 border-primary text-primary-text shadow-sm'
-                  : 'bg-[#171A1E] border-[#343B42] text-secondary-text hover:border-[#525C66] hover:text-primary-text'
+                  : 'bg-[#171A1E] border-[#343A40] text-secondary-text hover:border-[#525C66] hover:text-primary-text'
               }`}
             >
               <div className="flex items-center justify-between">
@@ -71,7 +71,7 @@ export default function OnboardingPage() {
     },
     {
       title: 'Primary Learning Objective',
-      desc: 'Congnicode tailors assessment frequency and rubric expectations to your target.',
+      desc: 'COGNICODE tailors assessment frequency and rubric expectations to your target.',
       content: (
         <div className="space-y-2.5">
           {GOALS.map(g => (
@@ -81,7 +81,7 @@ export default function OnboardingPage() {
               className={`w-full p-3.5 rounded-md text-left transition-all border flex items-center justify-between min-h-[48px] ${
                 goal === g
                   ? 'bg-primary/10 border-primary text-primary-text font-semibold'
-                  : 'bg-[#171A1E] border-[#343B42] text-secondary-text hover:border-[#525C66] hover:text-primary-text'
+                  : 'bg-[#171A1E] border-[#343A40] text-secondary-text hover:border-[#525C66] hover:text-primary-text'
               }`}
             >
               <span className="text-body-sm leading-relaxed">{g}</span>
@@ -103,7 +103,7 @@ export default function OnboardingPage() {
               className={`px-3 py-2 rounded text-code-sm font-mono transition-all border min-h-[44px] flex items-center gap-1.5 ${
                 topics.includes(t)
                   ? 'bg-primary/15 text-primary border-primary/50 font-bold'
-                  : 'bg-[#171A1E] text-secondary-text border-[#343B42] hover:border-[#525C66]'
+                  : 'bg-[#171A1E] text-secondary-text border-[#343A40] hover:border-[#525C66]'
               }`}
             >
               {topics.includes(t) && <Icon name="check" size={14} />}
@@ -130,7 +130,7 @@ export default function OnboardingPage() {
               max={20}
               value={hoursPerWeek}
               onChange={e => setHoursPerWeek(+e.target.value)}
-              className="w-full accent-[#42C7B5] cursor-pointer"
+              className="w-full accent-[#60E3D0] cursor-pointer"
             />
             <div className="flex justify-between text-label-xs font-mono text-muted mt-1">
               <span>1 hr/wk</span>
@@ -175,14 +175,14 @@ export default function OnboardingPage() {
             <div
               key={i}
               className={`h-1.5 rounded-full transition-colors ${
-                i <= step ? 'bg-primary' : 'bg-[#242A30]'
+                i <= step ? 'bg-primary' : 'bg-[#25292D]'
               }`}
             />
           ))}
         </div>
 
         {/* Card */}
-        <div className="card p-6 sm:p-7 bg-[#1C2024] border-[#343B42] shadow-xl space-y-6">
+        <div className="card p-6 sm:p-7 bg-[#1C2022] border-[#343A40] shadow-xl space-y-6">
           <div>
             <span className="text-label-xs font-mono text-muted uppercase">
               Step {step + 1} of {STEPS.length}
@@ -199,7 +199,7 @@ export default function OnboardingPage() {
             {STEPS[step].content}
           </div>
 
-          <div className="flex items-center justify-between pt-4 border-t border-[#343B42]">
+          <div className="flex items-center justify-between pt-4 border-t border-[#343A40]">
             {step > 0 ? (
               <button
                 type="button"

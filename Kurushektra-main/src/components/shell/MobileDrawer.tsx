@@ -20,7 +20,7 @@ export function MobileDrawer({ isOpen, onClose, role }: MobileDrawerProps) {
       />
 
       {/* Drawer content */}
-      <div className="relative z-10 w-[270px] max-w-[85vw] h-full bg-[#171A1E] border-r border-[#343B42] shadow-2xl flex flex-col">
+      <div className="relative z-10 w-[270px] max-w-[85vw] h-full bg-[#15181A] border-r border-[#343A40] shadow-2xl flex flex-col">
         <WorkspaceExplorer
           role={role}
           isOpen={true}

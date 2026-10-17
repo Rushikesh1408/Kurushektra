@@ -106,7 +106,7 @@ export default function UnderstandingAssessmentPage() {
   return (
     <div className="max-w-3xl mx-auto space-y-5 animate-fade-in">
       {/* Top Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-[#343B42]">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-[#343A40]">
         <div>
           <div className="flex items-center gap-2 text-label-xs font-mono text-muted uppercase mb-1">
             <Link to={`/submissions/${submissionId}`} className="hover:text-primary transition-colors flex items-center gap-1">
@@ -125,16 +125,16 @@ export default function UnderstandingAssessmentPage() {
       </div>
 
       {loading ? (
-        <div className="card p-12 flex flex-col items-center justify-center gap-3 bg-[#1C2024] border-[#343B42]">
+        <div className="card p-12 flex flex-col items-center justify-center gap-3 bg-[#1C2022] border-[#343A40]">
           <Spinner size={32} />
           <span className="text-body-sm text-secondary-text font-mono">
             Generating conceptual verification prompts from submission AST...
           </span>
         </div>
       ) : error ? (
-        <div className="card p-6 bg-[#E98779]/10 border border-[#E98779]/30 text-center space-y-3">
-          <Icon name="error" size={32} className="text-[#E98779] mx-auto" />
-          <h2 className="text-headline-sm text-[#E98779] font-bold">Failed to Load Questions</h2>
+        <div className="card p-6 bg-[#E99AA4]/10 border border-[#E99AA4]/30 text-center space-y-3">
+          <Icon name="error" size={32} className="text-[#E99AA4] mx-auto" />
+          <h2 className="text-headline-sm text-[#E99AA4] font-bold">Failed to Load Questions</h2>
           <p className="text-body-sm text-secondary-text font-mono text-code-sm">{error}</p>
           <button onClick={handleRetry} className="btn btn-secondary btn-sm font-mono">
             <Icon name="refresh" size={16} />
@@ -142,8 +142,8 @@ export default function UnderstandingAssessmentPage() {
           </button>
         </div>
       ) : questions.length === 0 ? (
-        <div className="card p-8 text-center space-y-4 bg-[#1C2024] border-[#343B42]">
-          <div className="w-12 h-12 rounded-full bg-[#242A30] border border-[#343B42] flex items-center justify-center text-primary mx-auto">
+        <div className="card p-8 text-center space-y-4 bg-[#1C2022] border-[#343A40]">
+          <div className="w-12 h-12 rounded-full bg-[#25292D] border border-[#343A40] flex items-center justify-center text-primary mx-auto">
             <Icon name="quiz" size={26} />
           </div>
           <h2 className="text-headline-sm text-primary-text font-bold">No Follow-Up Questions Found</h2>
@@ -158,7 +158,7 @@ export default function UnderstandingAssessmentPage() {
       ) : (
         <div className="space-y-5">
           {/* Progress Tracker Bar */}
-          <div className="card p-4 bg-[#1C2024] border-[#343B42] flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="card p-4 bg-[#1C2022] border-[#343A40] flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div className="flex items-center gap-2 font-mono text-code-sm">
               <span className="uppercase text-muted">
                 Question {currentIndex + 1} of {totalQuestions}
@@ -190,7 +190,7 @@ export default function UnderstandingAssessmentPage() {
                       ? 'bg-primary text-[#111315] font-bold border-primary shadow-sm'
                       : isAnswered
                       ? 'bg-[#83D69A]/15 text-[#83D69A] border-[#83D69A]/30'
-                      : 'bg-[#1C2024] text-secondary-text hover:text-primary-text border-[#343B42]'
+                      : 'bg-[#1C2022] text-secondary-text hover:text-primary-text border-[#343A40]'
                   }`}
                 >
                   <span>Q{idx + 1}</span>
@@ -202,7 +202,7 @@ export default function UnderstandingAssessmentPage() {
 
           {/* Active Question Card */}
           {currentQ && (
-            <div className="card p-5 sm:p-6 bg-[#1C2024] border-[#343B42] space-y-5">
+            <div className="card p-5 sm:p-6 bg-[#1C2022] border-[#343A40] space-y-5">
               {/* Category Header */}
               <div className="flex items-center justify-between">
                 <span className="badge badge-info text-label-xs font-mono uppercase flex items-center gap-1.5">
@@ -226,7 +226,7 @@ export default function UnderstandingAssessmentPage() {
 
               {/* Action Error Banner */}
               {actionError && (
-                <div className="p-3 bg-[#E98779]/15 border border-[#E98779]/30 rounded text-label-xs text-[#E98779] font-mono">
+                <div className="p-3 bg-[#E99AA4]/15 border border-[#E99AA4]/30 rounded text-label-xs text-[#E99AA4] font-mono">
                   {actionError}
                 </div>
               )}
@@ -235,7 +235,7 @@ export default function UnderstandingAssessmentPage() {
               {submittedAnswers[currentQ.id] ? (
                 /* Evaluated Feedback Card */
                 <div className="space-y-4 pt-2">
-                  <div className="p-4 bg-[#111315] rounded border border-[#343B42] space-y-2 font-mono">
+                  <div className="p-4 bg-[#111315] rounded border border-[#343A40] space-y-2 font-mono">
                     <div className="flex items-center justify-between">
                       <span className="text-[11px] uppercase text-muted">Your Explanation:</span>
                       <span className="text-[11px] text-muted">
@@ -276,7 +276,7 @@ export default function UnderstandingAssessmentPage() {
                     value={answerDrafts[currentQ.id] || ''}
                     onChange={(e) => handleDraftChange(currentQ.id, e.target.value)}
                     placeholder="Explain step-by-step why you chose this data structure, time/space trade-offs, and boundary behavior..."
-                    className="w-full bg-[#111315] border border-[#343B42] rounded p-3 text-body-sm text-primary-text font-mono focus:border-primary focus:outline-none resize-none"
+                    className="w-full bg-[#111315] border border-[#343A40] rounded p-3 text-body-sm text-primary-text font-mono focus:border-primary focus:outline-none resize-none"
                   />
                   <div className="flex items-center justify-between">
                     <span className="text-label-xs text-muted font-mono">
@@ -299,7 +299,7 @@ export default function UnderstandingAssessmentPage() {
               )}
 
               {/* Prev / Next Pagination Controls */}
-              <div className="flex items-center justify-between pt-4 border-t border-[#343B42]">
+              <div className="flex items-center justify-between pt-4 border-t border-[#343A40]">
                 <button
                   onClick={() => {
                     if (currentIndex > 0) {

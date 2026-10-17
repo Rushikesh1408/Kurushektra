@@ -16,24 +16,24 @@ export function WorkspaceExplorer({ role, isOpen, onClose, isMobile = false }: W
     <aside
       className={`${
         isMobile
-          ? 'w-[260px] h-full flex flex-col bg-[#171A1E]'
-          : 'hidden md:flex flex-col w-[240px] shrink-0 bg-[#171A1E] border-r border-[#343B42]'
+          ? 'w-[260px] h-full flex flex-col bg-[#15181A]'
+          : 'hidden md:flex flex-col w-[240px] shrink-0 bg-[#15181A] border-r border-[#343A40]'
       } select-none`}
       style={{ height: '100vh' }}
       aria-label="Workspace Explorer"
     >
       {/* Explorer Top Header */}
-      <div className="h-[48px] px-3.5 flex items-center justify-between border-b border-[#343B42] bg-[#1C2024] shrink-0">
+      <div className="h-[48px] px-3.5 flex items-center justify-between border-b border-[#343A40] bg-[#1C2022] shrink-0">
         <div className="flex items-center gap-2">
-          <Icon name="explore" size={16} className="text-primary" />
-          <span className="text-label-xs font-mono font-bold tracking-wider text-primary uppercase">
+          <Icon name="explore" size={16} className="text-[#60E3D0]" />
+          <span className="text-xs font-mono font-bold tracking-wider text-[#60E3D0] uppercase">
             {role === 'teacher' ? 'TEACHER WORKSPACE' : role === 'admin' ? 'ADMIN CONSOLE' : 'LEARNER WORKSPACE'}
           </span>
         </div>
         {onClose && (
           <button
             onClick={onClose}
-            className="w-7 h-7 rounded flex items-center justify-center text-[#737E89] hover:text-[#F1F3F5] hover:bg-[#242A30] transition-colors"
+            className="w-7 h-7 rounded flex items-center justify-center text-[#737E89] hover:text-[#F2F3F5] hover:bg-[#25292D] transition-colors"
             title="Collapse Explorer"
             aria-label="Collapse Explorer"
           >
@@ -307,10 +307,10 @@ export function WorkspaceExplorer({ role, isOpen, onClose, isMobile = false }: W
       </div>
 
       {/* Explorer Footer Telemetry Status */}
-      <div className="p-2.5 border-t border-[#343B42] bg-[#1C2024]/80 text-[11px] font-mono text-[#A7B0B9] flex items-center justify-between shrink-0">
+      <div className="p-2.5 border-t border-[#343A40] bg-[#1C2022] text-xs font-mono text-[#B7BEC5] flex items-center justify-between shrink-0">
         <div className="flex items-center gap-1.5">
           <span className="status-dot status-dot-active" />
-          <span className="text-[#F1F3F5] font-medium">Ready</span>
+          <span className="text-[#F2F3F5] font-medium">Ready</span>
         </div>
         <span className="text-[#737E89]">v2.4.0-st</span>
       </div>

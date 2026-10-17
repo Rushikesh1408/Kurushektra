@@ -37,7 +37,7 @@ export function MobileBottomNav({ role }: { role: UserRole }) {
 
   return (
     <nav
-      className="md:hidden fixed bottom-0 left-0 right-0 h-[54px] bg-[#111315]/95 backdrop-blur-md border-t border-[#343B42] flex items-center justify-around z-40 px-1 safe-area-pb"
+      className="md:hidden fixed bottom-0 left-0 right-0 h-[54px] bg-[#111315]/95 backdrop-blur-md border-t border-[#343A40] flex items-center justify-around z-40 px-1 safe-area-pb"
       aria-label="Mobile Navigation"
     >
       {items.map(({ path, icon, label }) => (

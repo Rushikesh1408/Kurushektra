@@ -48,11 +48,11 @@ export default function LoginPage() {
       <div className="w-full max-w-md space-y-6">
         {/* Brand Header */}
         <div className="text-center space-y-2">
-          <div className="w-12 h-12 rounded-lg bg-[#1C2024] border border-[#343B42] flex items-center justify-center text-primary mx-auto shadow-md">
+          <div className="w-12 h-12 rounded-lg bg-[#1C2022] border border-[#343A40] flex items-center justify-center text-primary mx-auto shadow-md">
             <Icon name="terminal" size={24} />
           </div>
           <h1 className="text-headline-md font-bold text-primary-text tracking-tight">
-            Sign in to Congnicode
+            Sign in to COGNICODE
           </h1>
           <p className="text-body-sm text-secondary-text">
             Don't just write code. Prove you understand it.
@@ -60,9 +60,9 @@ export default function LoginPage() {
         </div>
 
         {/* Card */}
-        <div className="card p-6 bg-[#1C2024] border-[#343B42] shadow-xl space-y-5">
+        <div className="card p-6 bg-[#1C2022] border-[#343A40] shadow-xl space-y-5">
           {/* Demo Persona Quick Select */}
-          <div className="p-3 bg-[#171A1E] rounded border border-[#343B42] space-y-2 font-mono">
+          <div className="p-3 bg-[#171A1E] rounded border border-[#343A40] space-y-2 font-mono">
             <span className="text-[11px] text-muted uppercase font-bold tracking-wider block">
               QUICK TEST PERSONA
             </span>
@@ -75,7 +75,7 @@ export default function LoginPage() {
                   className={`py-1.5 px-2 rounded text-label-xs uppercase font-semibold transition-colors border text-center ${
                     role === r
                       ? 'bg-primary/15 text-primary border-primary/50'
-                      : 'bg-[#1C2024] text-secondary-text border-[#343B42] hover:text-primary-text'
+                      : 'bg-[#1C2022] text-secondary-text border-[#343A40] hover:text-primary-text'
                   }`}
                 >
                   {r}
@@ -124,7 +124,7 @@ export default function LoginPage() {
             </div>
 
             {error && (
-              <div className="p-3 rounded bg-[#E98779]/15 border border-[#E98779]/30 text-[#E98779] text-label-xs font-mono flex items-center gap-2">
+              <div className="p-3 rounded bg-[#E99AA4]/15 border border-[#E99AA4]/30 text-[#E99AA4] text-label-xs font-mono flex items-center gap-2">
                 <Icon name="error" size={16} />
                 <span>{error}</span>
               </div>

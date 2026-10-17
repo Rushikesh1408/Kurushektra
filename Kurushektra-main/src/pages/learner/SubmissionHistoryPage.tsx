@@ -20,7 +20,7 @@ export default function SubmissionHistoryPage() {
   return (
     <div className="max-w-5xl mx-auto space-y-6 animate-fade-in">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-[#343B42]">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-[#343A40]">
         <div>
           <div className="flex items-center gap-2 text-label-xs font-mono text-muted uppercase mb-1">
             <span>Learner</span>
@@ -38,8 +38,8 @@ export default function SubmissionHistoryPage() {
       </div>
 
       {/* Filter and Search Bar */}
-      <div className="card p-3 sm:p-4 bg-[#1C2024] border-[#343B42] flex flex-col md:flex-row gap-3">
-        <div className="flex-1 relative flex items-center bg-[#111315] border border-[#343B42] rounded px-3 py-1.5 focus-within:border-primary transition-colors">
+      <div className="card p-3 sm:p-4 bg-[#1C2022] border-[#343A40] flex flex-col md:flex-row gap-3">
+        <div className="flex-1 relative flex items-center bg-[#111315] border border-[#343A40] rounded px-3 py-1.5 focus-within:border-primary transition-colors">
           <Icon name="search" size={16} className="text-muted mr-2" />
           <input
             type="text"
@@ -54,7 +54,7 @@ export default function SubmissionHistoryPage() {
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
-            className="bg-[#111315] border border-[#343B42] rounded px-3 py-1.5 text-label-xs text-primary font-mono focus:border-primary cursor-pointer outline-none min-h-[36px]"
+            className="bg-[#111315] border border-[#343A40] rounded px-3 py-1.5 text-label-xs text-primary font-mono focus:border-primary cursor-pointer outline-none min-h-[36px]"
           >
             <option value="all">All Verdicts</option>
             <option value="accepted">Accepted</option>
@@ -65,7 +65,7 @@ export default function SubmissionHistoryPage() {
           <select
             value={languageFilter}
             onChange={(e) => setLanguageFilter(e.target.value)}
-            className="bg-[#111315] border border-[#343B42] rounded px-3 py-1.5 text-label-xs text-primary font-mono focus:border-primary cursor-pointer outline-none min-h-[36px]"
+            className="bg-[#111315] border border-[#343A40] rounded px-3 py-1.5 text-label-xs text-primary font-mono focus:border-primary cursor-pointer outline-none min-h-[36px]"
           >
             <option value="all">All Languages</option>
             <option value="python">Python</option>
@@ -76,7 +76,7 @@ export default function SubmissionHistoryPage() {
       </div>
 
       {/* Desktop Table View */}
-      <div className="card bg-[#1C2024] border-[#343B42] overflow-hidden hidden md:block">
+      <div className="card bg-[#1C2022] border-[#343A40] overflow-hidden hidden md:block">
         <table className="data-table">
           <thead>
             <tr>
@@ -129,7 +129,7 @@ export default function SubmissionHistoryPage() {
       {/* Mobile Card List View */}
       <div className="space-y-3 md:hidden">
         {filtered.map(s => (
-          <div key={s.id} className="card p-4 bg-[#1C2024] border-[#343B42] space-y-3">
+          <div key={s.id} className="card p-4 bg-[#1C2022] border-[#343A40] space-y-3">
             <div className="flex items-start justify-between gap-2">
               <div>
                 <h3 className="text-body-md font-bold text-primary-text">{s.challengeTitle}</h3>
@@ -138,7 +138,7 @@ export default function SubmissionHistoryPage() {
               <StatusBadge status={s.status} />
             </div>
 
-            <div className="grid grid-cols-2 gap-2 text-label-xs font-mono text-secondary-text pt-2 border-t border-[#343B42]">
+            <div className="grid grid-cols-2 gap-2 text-label-xs font-mono text-secondary-text pt-2 border-t border-[#343A40]">
               <span>Tests: <strong className="text-primary-text">{s.testsPassed}/{s.testsTotal}</strong></span>
               <span>Runtime: <strong className="text-[#83D69A]">{s.runtime ? `${s.runtime}ms` : '—'}</strong></span>
             </div>

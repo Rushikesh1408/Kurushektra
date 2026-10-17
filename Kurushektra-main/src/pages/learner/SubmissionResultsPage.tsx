@@ -100,7 +100,7 @@ export default function SubmissionResultsPage() {
   return (
     <div className="max-w-5xl mx-auto space-y-6 animate-fade-in">
       {/* Header with Navigation and Breadcrumbs */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-[#343B42]">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-[#343A40]">
         <div>
           <div className="flex items-center gap-2 text-label-xs font-mono text-muted uppercase mb-1">
             <Link to="/history" className="hover:text-primary transition-colors">Submissions</Link>
@@ -124,18 +124,18 @@ export default function SubmissionResultsPage() {
       </div>
 
       {/* Main Status & Metrics Card */}
-      <div className="card p-5 sm:p-6 bg-[#1C2024] border-[#343B42]">
+      <div className="card p-5 sm:p-6 bg-[#1C2022] border-[#343A40]">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div className="flex items-center gap-4">
             <div className={`w-12 h-12 rounded-lg flex items-center justify-center ${
-              isAccepted ? 'bg-[#83D69A]/15 text-[#83D69A] border border-[#83D69A]/30' : 'bg-[#E98779]/15 text-[#E98779] border border-[#E98779]/30'
+              isAccepted ? 'bg-[#83D69A]/15 text-[#83D69A] border border-[#83D69A]/30' : 'bg-[#E99AA4]/15 text-[#E99AA4] border border-[#E99AA4]/30'
             }`}>
               <Icon name={isAccepted ? 'check_circle' : 'cancel'} size={28} />
             </div>
             <div>
               <div className="flex items-center gap-2 flex-wrap">
                 <StatusBadge status={submission.status} />
-                <span className="text-label-xs text-secondary-text font-mono uppercase bg-[#242A30] px-2 py-0.5 rounded border border-[#343B42]">
+                <span className="text-label-xs text-secondary-text font-mono uppercase bg-[#25292D] px-2 py-0.5 rounded border border-[#343A40]">
                   {submission.language}
                 </span>
               </div>
@@ -146,7 +146,7 @@ export default function SubmissionResultsPage() {
           </div>
 
           {/* Quick Metrics */}
-          <div className="grid grid-cols-3 gap-4 border-t md:border-t-0 md:border-l border-[#343B42] pt-4 md:pt-0 md:pl-6 font-mono">
+          <div className="grid grid-cols-3 gap-4 border-t md:border-t-0 md:border-l border-[#343A40] pt-4 md:pt-0 md:pl-6 font-mono">
             <div>
               <span className="text-[11px] text-muted uppercase block">Assertions</span>
               <span className="text-headline-sm text-primary-text font-bold">
@@ -197,7 +197,7 @@ export default function SubmissionResultsPage() {
       {/* Grid: Code Preview + AST Complexity Analysis */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
         {/* Submitted Code */}
-        <div className="card p-4 sm:p-5 bg-[#1C2024] border-[#343B42] flex flex-col gap-3">
+        <div className="card p-4 sm:p-5 bg-[#1C2022] border-[#343A40] flex flex-col gap-3">
           <div className="flex items-center justify-between">
             <span className="text-label-sm font-mono uppercase text-primary-text font-bold">Submitted Implementation</span>
             <span className="text-label-xs text-muted font-mono">{submission.language}</span>
@@ -206,14 +206,14 @@ export default function SubmissionResultsPage() {
         </div>
 
         {/* Diagnostic & AST Analysis */}
-        <div className="card p-4 sm:p-5 bg-[#1C2024] border-[#343B42] flex flex-col gap-3.5">
+        <div className="card p-4 sm:p-5 bg-[#1C2022] border-[#343A40] flex flex-col gap-3.5">
           <div className="flex items-center justify-between">
             <span className="text-label-sm font-mono uppercase text-primary-text font-bold">AST Static Telemetry</span>
             <span className="badge badge-primary text-label-xs font-mono">AST Verified</span>
           </div>
 
           <div className="space-y-3 font-mono text-code-sm">
-            <div className="p-3 bg-[#171A1E] rounded border border-[#343B42]">
+            <div className="p-3 bg-[#171A1E] rounded border border-[#343A40]">
               <div className="flex items-center gap-2 text-[#83D69A] text-label-xs font-semibold">
                 <Icon name="timer" size={15} />
                 <span>Verified Time Complexity: O(n)</span>
@@ -223,7 +223,7 @@ export default function SubmissionResultsPage() {
               </p>
             </div>
 
-            <div className="p-3 bg-[#171A1E] rounded border border-[#343B42]">
+            <div className="p-3 bg-[#171A1E] rounded border border-[#343A40]">
               <div className="flex items-center gap-2 text-primary text-label-xs font-semibold">
                 <Icon name="memory" size={15} />
                 <span>Auxiliary Space: O(n)</span>
@@ -233,8 +233,8 @@ export default function SubmissionResultsPage() {
               </p>
             </div>
 
-            <div className="p-3 bg-[#171A1E] rounded border border-[#343B42]">
-              <div className="flex items-center gap-2 text-[#E9B567] text-label-xs font-semibold">
+            <div className="p-3 bg-[#171A1E] rounded border border-[#343A40]">
+              <div className="flex items-center gap-2 text-[#F2B866] text-label-xs font-semibold">
                 <Icon name="psychology" size={15} />
                 <span>Cognitive Checkpoint Pending</span>
               </div>
@@ -254,7 +254,7 @@ export default function SubmissionResultsPage() {
       </div>
 
       {/* Test Cases Table */}
-      <div className="card p-4 sm:p-5 bg-[#1C2024] border-[#343B42] space-y-3">
+      <div className="card p-4 sm:p-5 bg-[#1C2022] border-[#343A40] space-y-3">
         <div className="flex items-center justify-between">
           <span className="text-label-sm font-mono uppercase text-primary-text font-bold">Assertion Suite Execution</span>
           <span className="text-label-xs text-muted font-mono">{submission.passed} / {submission.total} Passed</span>
@@ -264,17 +264,17 @@ export default function SubmissionResultsPage() {
           {submission.results.map((tc, idx) => (
             <div
               key={idx}
-              className="p-3 bg-[#171A1E] rounded border border-[#343B42] flex flex-col md:flex-row md:items-center justify-between gap-2 text-label-xs font-mono"
+              className="p-3 bg-[#171A1E] rounded border border-[#343A40] flex flex-col md:flex-row md:items-center justify-between gap-2 text-label-xs font-mono"
             >
               <div className="flex items-center gap-2.5">
-                <span className={`w-2 h-2 rounded-full ${tc.status === 'passed' ? 'bg-[#83D69A]' : 'bg-[#E98779]'}`} />
+                <span className={`w-2 h-2 rounded-full ${tc.status === 'passed' ? 'bg-[#83D69A]' : 'bg-[#E99AA4]'}`} />
                 <span className="text-primary-text font-semibold">{tc.label}</span>
                 <span className="text-muted">({tc.runtime_ms ?? 0}ms · {tc.memory_kb ?? 0}KB)</span>
               </div>
               <div className="text-secondary-text flex flex-wrap gap-3">
                 {tc.input_data && <span>In: <code className="text-primary">{tc.input_data}</code></span>}
                 {tc.expected_output && <span>Out: <code className="text-[#83D69A]">{tc.expected_output}</code></span>}
-                <span>Status: <code className={tc.status === 'passed' ? 'text-[#83D69A] font-bold' : 'text-[#E98779] font-bold'}>{tc.status.toUpperCase()}</code></span>
+                <span>Status: <code className={tc.status === 'passed' ? 'text-[#83D69A] font-bold' : 'text-[#E99AA4] font-bold'}>{tc.status.toUpperCase()}</code></span>
               </div>
             </div>
           ))}

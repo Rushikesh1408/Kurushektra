@@ -6,8 +6,8 @@ import { mockChallenges, mockSubmissions } from '../../data/mockData';
 import { api } from '../../services/api';
 import type { BackendSubmission, BackendChallengeDetail } from '../../services/api';
 
-type WorkspaceTab = 'problem' | 'code' | 'output' | 'feedback';
-type OutputTab = 'tests' | 'ast' | 'console';
+type WorkspaceTab = 'problem' | 'code' | 'output' | 'hints';
+type OutputTab = 'tests' | 'guidance' | 'hints' | 'ast' | 'console';
 
 export default function CodingWorkspacePage() {
   const { challengeId } = useParams<{ challengeId: string }>();
@@ -35,6 +35,28 @@ export default function CodingWorkspacePage() {
   const [activeOutputTab, setActiveOutputTab] = useState<OutputTab>('tests');
   const [isOutputCollapsed, setIsOutputCollapsed] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  // Progressive Hints state
+  const [unlockedHints, setUnlockedHints] = useState<number>(0);
+
+  // Challenge hints definition
+  const hints = [
+    {
+      level: 1,
+      title: 'Think About Complements',
+      content: 'For each number `x` in the array, the required matching value is `target - x`. How can you quickly check if this complement has already been seen without scanning the array again?',
+    },
+    {
+      level: 2,
+      title: 'Use Constant-Time Lookup',
+      content: 'A hash map (dictionary in Python, Map/object in JavaScript) gives amortized O(1) key lookups. As you iterate through the list, you can store each number and its index in the map.',
+    },
+    {
+      level: 3,
+      title: 'Prevent Self-Pairing',
+      content: 'Check whether `target - x` exists in your hash map BEFORE storing the current element `x`. This guarantees you never pair an element with itself at the same index.',
+    },
+  ];
 
   // Execution states
   const [hasRun, setHasRun] = useState(false);
@@ -140,13 +162,11 @@ export default function CodingWorkspacePage() {
         source_code: code,
       });
 
-      setConsoleLogs(prev => prev + `[JOB] Enqueued submission ${initial.id} (Status: ${initial.status})\n[POLL] Awaiting runner verdict...\n`);
-
       const finished = await pollSubmission(initial.id);
       setLastSubmission(finished);
 
-      const passCount = finished.passed ?? 0;
-      const totalCount = finished.total ?? 0;
+      const passCount = finished.passed || finished.results?.filter(r => r.status === 'passed').length || 0;
+      const totalCount = finished.total || finished.results?.length || 0;
 
       let logAppend = `[RESULT] Execution completed: ${finished.status.toUpperCase()}\n`;
       logAppend += `[SUMMARY] Tests Passed: ${passCount}/${totalCount}\n`;
@@ -161,6 +181,11 @@ export default function CodingWorkspacePage() {
       });
 
       setConsoleLogs(prev => prev + logAppend);
+
+      // If test failed, nudge user towards diagnostic guidance tab
+      if (passCount < totalCount) {
+        setActiveOutputTab('guidance');
+      }
     } catch (err: any) {
       console.error('Run code error:', err);
       setErrorMessage(err?.message || 'Execution service unreachable. Running locally in simulated demo mode.');
@@ -192,16 +217,16 @@ export default function CodingWorkspacePage() {
   const challengeSubmissions = mockSubmissions.filter(s => s.challengeId === challenge.id);
 
   return (
-    <div className="flex flex-col h-[calc(100vh-48px-1.5rem)] md:h-[calc(100vh-48px-3rem)] bg-[#111315] border border-[#343B42] rounded-lg overflow-hidden select-none">
-      {/* Top Breadcrumb & Control Bar */}
-      <div className="h-10 bg-[#171A1E] px-3 sm:px-4 flex items-center justify-between border-b border-[#343B42] shrink-0">
-        <div className="flex items-center gap-2 text-label-xs font-mono text-secondary-text truncate mr-2">
-          <Link to="/challenges" className="hover:text-primary transition-colors flex items-center gap-1 shrink-0">
+    <div className="flex flex-col h-[calc(100vh-48px-1.5rem)] md:h-[calc(100vh-48px-2rem)] bg-[#111315] border border-[#343A40] rounded-lg overflow-hidden select-none">
+      {/* ── TOP CONTROL & BREADCRUMB BAR ─────────────────────────────────── */}
+      <div className="h-10 bg-[#15181A] px-3 sm:px-4 flex items-center justify-between border-b border-[#343A40] shrink-0">
+        <div className="flex items-center gap-2 text-xs font-mono text-[#B7BEC5] truncate mr-2">
+          <Link to="/challenges" className="hover:text-[#60E3D0] transition-colors flex items-center gap-1 shrink-0">
             <Icon name="arrow_back" size={14} />
             <span className="hidden sm:inline">Challenges</span>
           </Link>
-          <span className="text-[#525C66]">/</span>
-          <span className="text-primary-text font-bold truncate">{challenge.title}</span>
+          <span className="text-[#56606A]">/</span>
+          <span className="text-[#F2F3F5] font-bold truncate">{challenge.title}</span>
           <DifficultyBadge difficulty={challenge.difficulty} />
         </div>
 
@@ -211,7 +236,7 @@ export default function CodingWorkspacePage() {
           <select
             value={language}
             onChange={e => handleLanguageChange(e.target.value as any)}
-            className="hidden md:block bg-[#1C2024] border border-[#343B42] rounded px-2.5 py-1 text-label-xs text-primary font-mono focus:border-primary cursor-pointer outline-none"
+            className="hidden md:block bg-[#1C2022] border border-[#343A40] rounded px-2.5 py-1 text-xs text-[#60E3D0] font-mono focus:border-[#60E3D0] cursor-pointer outline-none"
           >
             <option value="python">Python 3</option>
             <option value="javascript">JavaScript (Node)</option>
@@ -222,55 +247,60 @@ export default function CodingWorkspacePage() {
 
       {/* Error Alert Bar */}
       {errorMessage && (
-        <div className="bg-[#E98779]/15 border-b border-[#E98779]/30 px-3 py-1.5 text-label-xs text-[#E98779] font-mono flex items-center justify-between shrink-0">
+        <div className="bg-[#E99AA4]/15 border-b border-[#E99AA4]/30 px-3 py-1.5 text-xs text-[#E99AA4] font-mono flex items-center justify-between shrink-0">
           <div className="flex items-center gap-2">
             <Icon name="warning" size={14} />
             <span>{errorMessage}</span>
           </div>
-          <button onClick={() => setErrorMessage(null)} className="text-[#E98779] hover:text-[#F1F3F5]">
+          <button onClick={() => setErrorMessage(null)} className="text-[#E99AA4] hover:text-[#F2F3F5]">
             <Icon name="close" size={14} />
           </button>
         </div>
       )}
 
       {/* Mobile Tab Selector (< 1024px) */}
-      <div className="flex lg:hidden bg-[#171A1E] border-b border-[#343B42] shrink-0">
-        {(['problem', 'code', 'output', 'feedback'] as WorkspaceTab[]).map(tab => (
+      <div className="flex lg:hidden bg-[#15181A] border-b border-[#343A40] shrink-0">
+        {(['problem', 'code', 'output', 'hints'] as WorkspaceTab[]).map(tab => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
-            className={`flex-1 py-2 text-center text-label-xs uppercase tracking-wider font-mono border-b-2 transition-colors min-h-[44px] flex items-center justify-center gap-1 ${
+            className={`flex-1 py-2 text-center text-xs uppercase tracking-wider font-mono border-b-2 transition-colors min-h-[44px] flex items-center justify-center gap-1 ${
               activeTab === tab
-                ? 'border-primary text-primary bg-[#1C2024] font-bold'
-                : 'border-transparent text-secondary-text hover:text-primary-text'
+                ? 'border-[#60E3D0] text-[#60E3D0] bg-[#1C2022] font-bold'
+                : 'border-transparent text-[#B7BEC5] hover:text-[#F2F3F5]'
             }`}
           >
             {tab}
             {tab === 'output' && hasRun && (
               <span className="w-1.5 h-1.5 rounded-full bg-[#83D69A]" />
             )}
+            {tab === 'hints' && unlockedHints > 0 && (
+              <span className="text-[10px] px-1 py-0.2 rounded bg-[#F2B866]/20 text-[#F2B866]">
+                {unlockedHints}
+              </span>
+            )}
           </button>
         ))}
       </div>
 
-      {/* Main Workspace Body */}
+      {/* ── MAIN WORKSPACE BODY ──────────────────────────────────────────── */}
       <div className="flex-1 flex overflow-hidden">
-        {/* Left Panel: Problem Specification (Desktop: 42% flex, Mobile: tab controlled) */}
+        {/* Left Panel: Problem Specification, Constraints & Hints (Desktop: 42%, Mobile: Tab) */}
         <div
-          className={`w-full lg:w-[42%] border-r border-[#343B42] flex flex-col bg-[#171A1E] overflow-y-auto ${
-            activeTab === 'problem' ? 'flex' : 'hidden lg:flex'
+          className={`w-full lg:w-[42%] border-r border-[#343A40] flex flex-col bg-[#15181A] overflow-y-auto ${
+            activeTab === 'problem' || activeTab === 'hints' ? 'flex' : 'hidden lg:flex'
           }`}
         >
           <div className="p-4 sm:p-5 space-y-5">
             <div>
               <div className="flex items-center gap-2 mb-1">
-                <span className="font-mono text-[10px] text-muted uppercase tracking-wider">CHALLENGE SPECIFICATION</span>
+                <span className="font-mono text-[10px] text-[#737E89] uppercase tracking-wider">CHALLENGE SPECIFICATION</span>
                 <DifficultyBadge difficulty={challenge.difficulty} />
               </div>
-              <h1 className="text-headline-md text-primary-text font-bold">{challenge.title}</h1>
+              <h1 className="text-xl text-[#F2F3F5] font-bold">{challenge.title}</h1>
               <div className="flex flex-wrap gap-1.5 mt-2">
                 {challenge.tags.map(t => (
-                  <span key={t} className="badge badge-neutral text-label-xs font-mono">
+                  <span key={t} className="badge badge-neutral text-xs font-mono">
                     #{t}
                   </span>
                 ))}
@@ -278,17 +308,17 @@ export default function CodingWorkspacePage() {
             </div>
 
             {/* Description */}
-            <div className="text-body-md text-secondary-text leading-relaxed whitespace-pre-wrap font-sans">
+            <div className="text-sm text-[#B7BEC5] leading-relaxed whitespace-pre-wrap font-sans">
               <p>{challenge.description}</p>
             </div>
 
             {/* Constraints */}
             {challenge.constraints.length > 0 && (
               <div className="space-y-2">
-                <span className="text-label-xs font-mono font-bold uppercase text-primary tracking-wider block">
-                  Constraints
+                <span className="text-xs font-mono font-bold uppercase text-[#60E3D0] tracking-wider block">
+                  Constraints & Bounds
                 </span>
-                <ul className="list-disc list-inside text-code-sm text-secondary-text font-mono space-y-1">
+                <ul className="list-disc list-inside text-xs text-[#B7BEC5] font-mono space-y-1">
                   {challenge.constraints.map((c, i) => (
                     <li key={i}>{c}</li>
                   ))}
@@ -298,32 +328,105 @@ export default function CodingWorkspacePage() {
 
             {/* Visible Sample Test Cases */}
             <div className="space-y-3">
-              <span className="text-label-xs font-mono font-bold uppercase text-primary tracking-wider block">
+              <span className="text-xs font-mono font-bold uppercase text-[#60E3D0] tracking-wider block">
                 Sample Test Cases
               </span>
               {challenge.examples.map((ex, i) => (
-                <div key={i} className="p-3 rounded bg-[#111315] border border-[#343B42] space-y-1.5 font-mono text-code-sm">
+                <div key={i} className="p-3 rounded-lg bg-[#111315] border border-[#343A40] space-y-1.5 font-mono text-xs">
                   <div className="flex items-start gap-2">
-                    <span className="text-muted shrink-0 w-16">Input:</span>
-                    <span className="text-primary-text whitespace-pre-wrap">{ex.input}</span>
+                    <span className="text-[#737E89] shrink-0 w-16">Input:</span>
+                    <span className="text-[#F2F3F5] whitespace-pre-wrap">{ex.input}</span>
                   </div>
                   <div className="flex items-start gap-2">
-                    <span className="text-muted shrink-0 w-16">Output:</span>
+                    <span className="text-[#737E89] shrink-0 w-16">Output:</span>
                     <span className="text-[#83D69A] whitespace-pre-wrap">{ex.output}</span>
                   </div>
                   {ex.explanation && (
-                    <div className="flex items-start gap-2 pt-1 border-t border-[#343B42]/40 text-body-sm text-muted font-sans">
-                      <span>Note: {ex.explanation}</span>
+                    <div className="flex items-start gap-2 pt-1 border-t border-[#343A40]/40 text-xs text-[#B7BEC5] font-sans">
+                      <span>Explanation: {ex.explanation}</span>
                     </div>
                   )}
                 </div>
               ))}
             </div>
 
+            {/* Progressive Hints Section */}
+            <div className="pt-3 border-t border-[#343A40] space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-1.5 text-xs font-mono font-bold uppercase text-[#F2B866]">
+                  <Icon name="lightbulb" size={16} />
+                  <span>Progressive Learning Hints</span>
+                </div>
+                <span className="text-xs font-mono text-[#737E89]">
+                  {unlockedHints} of {hints.length} unlocked
+                </span>
+              </div>
+
+              <div className="space-y-2">
+                {hints.map((h, i) => {
+                  const isUnlocked = i < unlockedHints;
+                  return (
+                    <div
+                      key={h.level}
+                      className={`p-3 rounded-lg border transition-colors ${
+                        isUnlocked
+                          ? 'bg-[#1C2022] border-[#343A40] space-y-1'
+                          : 'bg-[#111315]/60 border-[#343A40]/60 opacity-70'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between text-xs font-mono">
+                        <span className={isUnlocked ? 'text-[#F2B866] font-semibold' : 'text-[#737E89]'}>
+                          Hint {h.level}: {h.title}
+                        </span>
+                        {!isUnlocked && (
+                          <span className="text-[10px] text-[#737E89]">Locked</span>
+                        )}
+                      </div>
+                      {isUnlocked ? (
+                        <p className="text-xs text-[#B7BEC5] leading-relaxed font-sans">
+                          {h.content}
+                        </p>
+                      ) : (
+                        <p className="text-xs text-[#737E89] italic font-sans">
+                          Unlock this hint if you need guidance on how to optimize without spoiling the solution.
+                        </p>
+                      )}
+                    </div>
+                  );
+                })}
+
+                {unlockedHints < hints.length && (
+                  <button
+                    onClick={() => setUnlockedHints(c => c + 1)}
+                    className="btn btn-secondary w-full text-xs font-mono flex items-center justify-center gap-1.5 py-1.5"
+                  >
+                    <Icon name="lock_open" size={14} className="text-[#F2B866]" />
+                    <span>Unlock Hint {unlockedHints + 1}</span>
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* Concept Remediation Link */}
+            <div className="p-3 rounded-lg bg-[#1C2022] border border-[#343A40] space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-mono font-bold text-[#8FAFF5] flex items-center gap-1">
+                  <Icon name="splitscreen" size={14} /> Targeted Concept Drill
+                </span>
+              </div>
+              <p className="text-xs text-[#B7BEC5]">
+                Struggling with hash collision timing? Review the interactive concept gap drill.
+              </p>
+              <Link to="/learn/gap/g1" className="text-xs font-mono text-[#60E3D0] hover:underline flex items-center gap-1">
+                <span>Open Remediation Drill</span>
+                <Icon name="arrow_forward" size={12} />
+              </Link>
+            </div>
+
             {/* Submission History Section */}
             {challengeSubmissions.length > 0 && (
-              <div className="pt-3 border-t border-[#343B42] space-y-2">
-                <span className="text-label-xs font-mono font-bold uppercase text-muted tracking-wider block">
+              <div className="pt-3 border-t border-[#343A40] space-y-2">
+                <span className="text-xs font-mono font-bold uppercase text-[#737E89] tracking-wider block">
                   Recent Runs
                 </span>
                 <div className="space-y-1.5">
@@ -331,13 +434,13 @@ export default function CodingWorkspacePage() {
                     <Link
                       key={s.id}
                       to={`/submissions/${s.id}`}
-                      className="p-2 rounded bg-[#111315] hover:border-primary border border-[#343B42] flex items-center justify-between text-code-sm font-mono transition-colors block"
+                      className="p-2 rounded bg-[#111315] hover:border-[#60E3D0] border border-[#343A40] flex items-center justify-between text-xs font-mono transition-colors block"
                     >
                       <div className="flex items-center gap-2">
-                        <span className={`w-2 h-2 rounded-full ${s.status === 'accepted' ? 'bg-[#83D69A]' : 'bg-[#E98779]'}`} />
-                        <span className="text-primary-text">{s.status.toUpperCase()}</span>
+                        <span className={`w-2 h-2 rounded-full ${s.status === 'accepted' ? 'bg-[#83D69A]' : 'bg-[#E99AA4]'}`} />
+                        <span className="text-[#F2F3F5]">{s.status.toUpperCase()}</span>
                       </div>
-                      <span className="text-muted">{s.testsPassed}/{s.testsTotal} passed</span>
+                      <span className="text-[#737E89]">{s.testsPassed}/{s.testsTotal} passed</span>
                     </Link>
                   ))}
                 </div>
@@ -346,16 +449,16 @@ export default function CodingWorkspacePage() {
           </div>
         </div>
 
-        {/* Right Panel: Editor & Output Pane (Desktop: 58% flex, Mobile: tab controlled) */}
+        {/* Right Panel: Editor & Output Tray (Desktop: 58%, Mobile: Tab) */}
         <div
           className={`w-full lg:w-[58%] flex flex-col bg-[#111315] overflow-hidden ${
-            activeTab !== 'problem' ? 'flex' : 'hidden lg:flex'
+            activeTab !== 'problem' && activeTab !== 'hints' ? 'flex' : 'hidden lg:flex'
           }`}
         >
           {/* Editor Sub-Header (Tabs & Language) */}
-          <div className="h-9 bg-[#1C2024] px-3 flex items-center justify-between border-b border-[#343B42] shrink-0">
+          <div className="h-9 bg-[#1C2022] px-3 flex items-center justify-between border-b border-[#343A40] shrink-0">
             <div className="flex items-center gap-2">
-              <div className="flex items-center gap-1.5 px-3 py-1 bg-[#111315] border-t-2 border-primary text-label-xs font-mono text-primary rounded-t border-x border-[#343B42]">
+              <div className="flex items-center gap-1.5 px-3 py-1 bg-[#111315] border-t-2 border-[#60E3D0] text-xs font-mono text-[#60E3D0] rounded-t border-x border-[#343A40]">
                 <Icon name="code" size={14} />
                 <span>solution.{language === 'python' ? 'py' : language === 'javascript' ? 'js' : 'java'}</span>
               </div>
@@ -365,7 +468,7 @@ export default function CodingWorkspacePage() {
             <select
               value={language}
               onChange={e => handleLanguageChange(e.target.value as any)}
-              className="md:hidden bg-[#111315] border border-[#343B42] rounded px-2 py-0.5 text-label-xs text-primary font-mono outline-none"
+              className="md:hidden bg-[#111315] border border-[#343A40] rounded px-2 py-0.5 text-xs text-[#60E3D0] font-mono outline-none"
             >
               <option value="python">Python 3</option>
               <option value="javascript">JavaScript</option>
@@ -376,7 +479,7 @@ export default function CodingWorkspacePage() {
           {/* Monaco Editor Container */}
           <div
             className={`flex-1 min-h-[220px] relative ${
-              activeTab === 'output' || activeTab === 'feedback' ? 'hidden lg:block' : 'block'
+              activeTab === 'output' ? 'hidden lg:block' : 'block'
             }`}
           >
             <Editor
@@ -399,52 +502,68 @@ export default function CodingWorkspacePage() {
             />
           </div>
 
-          {/* Terminal & Output Tray */}
+          {/* ── TERMINAL & OUTPUT TRAY ───────────────────────────────────── */}
           <div
             className={`${
-              isOutputCollapsed ? 'h-9' : 'h-64 lg:h-60'
-            } bg-[#171A1E] border-t border-[#343B42] flex flex-col shrink-0 transition-all duration-200 ${
+              isOutputCollapsed ? 'h-9' : 'h-72 lg:h-64'
+            } bg-[#15181A] border-t border-[#343A40] flex flex-col shrink-0 transition-all duration-200 ${
               activeTab === 'code' ? 'hidden lg:flex' : 'flex'
             }`}
           >
             {/* Tray Header Tabs */}
-            <div className="h-9 bg-[#1C2024] border-b border-[#343B42] flex items-center justify-between px-3 shrink-0">
-              <div className="flex items-center gap-1.5">
+            <div className="h-9 bg-[#1C2022] border-b border-[#343A40] flex items-center justify-between px-3 shrink-0">
+              <div className="flex items-center gap-1.5 overflow-x-auto">
                 <button
                   onClick={() => {
                     setActiveOutputTab('tests');
                     setIsOutputCollapsed(false);
                   }}
-                  className={`px-2.5 py-1 text-label-xs font-mono uppercase tracking-wider rounded transition-colors ${
+                  className={`px-2.5 py-1 text-xs font-mono uppercase tracking-wider rounded transition-colors ${
                     activeOutputTab === 'tests' && !isOutputCollapsed
-                      ? 'bg-[#111315] text-primary font-bold border border-[#343B42]'
-                      : 'text-secondary-text hover:text-primary-text'
+                      ? 'bg-[#111315] text-[#60E3D0] font-bold border border-[#343A40]'
+                      : 'text-[#B7BEC5] hover:text-[#F2F3F5]'
                   }`}
                 >
                   Test Results {lastSubmission ? `(${lastSubmission.passed}/${lastSubmission.total})` : ''}
                 </button>
+
+                <button
+                  onClick={() => {
+                    setActiveOutputTab('guidance');
+                    setIsOutputCollapsed(false);
+                  }}
+                  className={`px-2.5 py-1 text-xs font-mono uppercase tracking-wider rounded transition-colors ${
+                    activeOutputTab === 'guidance' && !isOutputCollapsed
+                      ? 'bg-[#111315] text-[#F2B866] font-bold border border-[#343A40]'
+                      : 'text-[#B7BEC5] hover:text-[#F2F3F5]'
+                  }`}
+                >
+                  Actionable Guidance
+                </button>
+
                 <button
                   onClick={() => {
                     setActiveOutputTab('ast');
                     setIsOutputCollapsed(false);
                   }}
-                  className={`px-2.5 py-1 text-label-xs font-mono uppercase tracking-wider rounded transition-colors ${
+                  className={`px-2.5 py-1 text-xs font-mono uppercase tracking-wider rounded transition-colors ${
                     activeOutputTab === 'ast' && !isOutputCollapsed
-                      ? 'bg-[#111315] text-primary font-bold border border-[#343B42]'
-                      : 'text-secondary-text hover:text-primary-text'
+                      ? 'bg-[#111315] text-[#8FAFF5] font-bold border border-[#343A40]'
+                      : 'text-[#B7BEC5] hover:text-[#F2F3F5]'
                   }`}
                 >
                   AST Analysis
                 </button>
+
                 <button
                   onClick={() => {
                     setActiveOutputTab('console');
                     setIsOutputCollapsed(false);
                   }}
-                  className={`px-2.5 py-1 text-label-xs font-mono uppercase tracking-wider rounded transition-colors ${
+                  className={`px-2.5 py-1 text-xs font-mono uppercase tracking-wider rounded transition-colors ${
                     activeOutputTab === 'console' && !isOutputCollapsed
-                      ? 'bg-[#111315] text-primary font-bold border border-[#343B42]'
-                      : 'text-secondary-text hover:text-primary-text'
+                      ? 'bg-[#111315] text-[#60E3D0] font-bold border border-[#343A40]'
+                      : 'text-[#B7BEC5] hover:text-[#F2F3F5]'
                   }`}
                 >
                   Terminal Logs
@@ -453,14 +572,14 @@ export default function CodingWorkspacePage() {
 
               <div className="flex items-center gap-2">
                 {lastSubmission && (
-                  <div className="hidden sm:flex items-center gap-1.5 text-label-xs font-mono text-[#83D69A]">
+                  <div className="hidden sm:flex items-center gap-1.5 text-xs font-mono text-[#83D69A]">
                     <span className="w-1.5 h-1.5 rounded-full bg-[#83D69A]" />
-                    <span>{lastSubmission.passed}/{lastSubmission.total} Assertions Passed</span>
+                    <span>{lastSubmission.passed}/{lastSubmission.total} Passed</span>
                   </div>
                 )}
                 <button
                   onClick={() => setIsOutputCollapsed(p => !p)}
-                  className="w-6 h-6 rounded flex items-center justify-center text-[#737E89] hover:text-[#F1F3F5] transition-colors"
+                  className="w-6 h-6 rounded flex items-center justify-center text-[#737E89] hover:text-[#F2F3F5] transition-colors"
                   title={isOutputCollapsed ? 'Expand panel' : 'Collapse panel'}
                   aria-label={isOutputCollapsed ? 'Expand panel' : 'Collapse panel'}
                 >
@@ -471,11 +590,11 @@ export default function CodingWorkspacePage() {
 
             {/* Tray Content */}
             {!isOutputCollapsed && (
-              <div className="flex-1 p-3 overflow-y-auto font-mono text-code-sm bg-[#111315]">
+              <div className="flex-1 p-3.5 overflow-y-auto font-mono text-xs bg-[#111315]">
                 {!hasRun ? (
-                  <div className="h-full flex flex-col items-center justify-center text-muted gap-2 py-4">
-                    <Icon name="terminal" size={26} className="text-[#525C66]" />
-                    <span>Click "Run Code" to compile and execute assertions against test suite</span>
+                  <div className="h-full flex flex-col items-center justify-center text-[#737E89] gap-2 py-4">
+                    <Icon name="terminal" size={26} className="text-[#56606A]" />
+                    <span>Click "Run Code" to compile and execute assertions against the test suite</span>
                   </div>
                 ) : activeOutputTab === 'tests' ? (
                   <div className="space-y-2">
@@ -483,57 +602,108 @@ export default function CodingWorkspacePage() {
                       lastSubmission.results.map((t, idx) => (
                         <div
                           key={idx}
-                          className="flex flex-col sm:flex-row sm:items-center justify-between p-2 rounded bg-[#171A1E] border border-[#343B42] text-label-xs"
+                          className="flex flex-col sm:flex-row sm:items-center justify-between p-2.5 rounded bg-[#15181A] border border-[#343A40] text-xs"
                         >
                           <div className="flex items-center gap-2">
-                            <span className={`w-2 h-2 rounded-full ${t.status === 'passed' ? 'bg-[#83D69A]' : 'bg-[#E98779]'}`} />
-                            <span className="text-primary-text font-semibold">{t.label}</span>
-                            <span className="text-muted">({t.runtime_ms ?? 0}ms · {t.memory_kb ?? 0}KB)</span>
+                            <span className={`w-2 h-2 rounded-full ${t.status === 'passed' ? 'bg-[#83D69A]' : 'bg-[#E99AA4]'}`} />
+                            <span className="text-[#F2F3F5] font-semibold">{t.label}</span>
+                            <span className="text-[#737E89]">({t.runtime_ms ?? 0}ms · {t.memory_kb ?? 0}KB)</span>
                           </div>
-                          <div className="text-secondary-text mt-1 sm:mt-0">
-                            Verdict: <code className={t.status === 'passed' ? 'text-[#83D69A] font-bold' : 'text-[#E98779] font-bold'}>{t.status.toUpperCase()}</code>
+                          <div className="text-[#B7BEC5] mt-1 sm:mt-0 font-mono">
+                            Verdict: <code className={t.status === 'passed' ? 'text-[#83D69A] font-bold' : 'text-[#E99AA4] font-bold'}>{t.status.toUpperCase()}</code>
                           </div>
                         </div>
                       ))
                     ) : (
-                      <div className="text-secondary-text text-code-sm">
+                      <div className="text-[#B7BEC5]">
                         {isRunning ? 'Executing test suite on backend runner...' : 'No test results returned yet.'}
                       </div>
                     )}
                   </div>
+                ) : activeOutputTab === 'guidance' ? (
+                  /* ── Actionable Educational Guidance (Section 7) ── */
+                  <div className="space-y-3 font-sans">
+                    <div className="p-3 rounded-lg bg-[#15181A] border border-[#343A40] space-y-2">
+                      <div className="flex items-center gap-2 text-xs font-mono font-bold text-[#F2B866]">
+                        <Icon name="diagnostic" size={16} />
+                        <span>ACTIONABLE GUIDANCE</span>
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-1 text-xs">
+                        <div className="space-y-1 p-2.5 rounded bg-[#1C2022] border border-[#343A40]">
+                          <span className="font-mono text-[#F2B866] uppercase font-bold block">1. What Happened?</span>
+                          <p className="text-[#B7BEC5]">
+                            {lastSubmission && lastSubmission.passed < lastSubmission.total
+                              ? 'Your solution failed on duplicate key handling or reached suboptimal asymptotic limits.'
+                              : 'All current test assertions passed. Now ensure the invariant holds for large inputs.'}
+                          </p>
+                        </div>
+
+                        <div className="space-y-1 p-2.5 rounded bg-[#1C2022] border border-[#343A40]">
+                          <span className="font-mono text-[#8FAFF5] uppercase font-bold block">2. Supporting Evidence</span>
+                          <p className="text-[#B7BEC5]">
+                            {lastSubmission && lastSubmission.passed < lastSubmission.total
+                              ? `Test assertions failed with mismatch on inputs where duplicate integers appeared.`
+                              : `Verified O(n) amortized execution across all standard sample arrays.`}
+                          </p>
+                        </div>
+
+                        <div className="space-y-1 p-2.5 rounded bg-[#1C2022] border border-[#343A40]">
+                          <span className="font-mono text-[#E99AA4] uppercase font-bold block">3. Concept Involved</span>
+                          <p className="text-[#B7BEC5]">
+                            Hash Map Insertion Sequence: Storing the current item before complement checking can cause self-pairing on identical values.
+                          </p>
+                        </div>
+
+                        <div className="space-y-1 p-2.5 rounded bg-[#1C2022] border border-[#343A40]">
+                          <span className="font-mono text-[#60E3D0] uppercase font-bold block">4. What Should You Try Next?</span>
+                          <p className="text-[#B7BEC5]">
+                            Inspect lines where `seen[num] = i` is called. Ensure you evaluate `if complement in seen:` before recording `seen[num]`.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 ) : activeOutputTab === 'ast' ? (
-                  <div className="space-y-2 text-label-xs">
-                    <div className="p-2.5 rounded bg-[#171A1E] border border-[#343B42] space-y-1.5">
+                  <div className="space-y-2 text-xs">
+                    <div className="p-2.5 rounded bg-[#15181A] border border-[#343A40] space-y-1.5">
                       <div className="flex items-center gap-2 text-[#83D69A]">
                         <Icon name="check_circle" size={15} />
                         <span className="font-semibold">Abstract Syntax Tree Parsed</span>
                       </div>
-                      <p className="text-secondary-text text-body-sm font-sans">
+                      <p className="text-[#B7BEC5] text-xs font-sans">
                         Control flow graphs and loop invariants analyzed. Complexity matches expected O(n) amortized bound.
                       </p>
                     </div>
 
-                    <div className="p-2.5 rounded bg-[#171A1E] border border-[#343B42] space-y-1.5">
-                      <div className="flex items-center gap-2 text-[#E9B567]">
+                    <div className="p-2.5 rounded bg-[#15181A] border border-[#343A40] space-y-1.5">
+                      <div className="flex items-center gap-2 text-[#F2B866]">
                         <Icon name="psychology" size={15} />
                         <span className="font-semibold">Cognitive Verification Prompt Queued</span>
                       </div>
-                      <p className="text-secondary-text text-body-sm font-sans">
-                        Submission triggers 2 follow-up verification questions to ensure full conceptual understanding of hash collisions and pointer persistence.
+                      <p className="text-[#B7BEC5] text-xs font-sans">
+                        Submission triggers follow-up verification questions to ensure full conceptual understanding of hash collisions and pointer persistence.
                       </p>
+                      <Link
+                        to={`/assessment/${lastSubmission?.id || 's1'}`}
+                        className="btn btn-secondary text-xs font-mono py-1 px-2.5 inline-flex items-center gap-1 mt-1"
+                      >
+                        <span>Take Understanding Assessment</span>
+                        <Icon name="arrow_forward" size={12} />
+                      </Link>
                     </div>
                   </div>
                 ) : (
-                  <pre className="text-secondary-text m-0 text-code-sm whitespace-pre-wrap leading-relaxed">
+                  <pre className="text-[#B7BEC5] m-0 text-xs whitespace-pre-wrap leading-relaxed font-mono">
                     {consoleLogs || 'No output recorded.'}
                   </pre>
                 )}
               </div>
             )}
 
-            {/* Bottom Action Tray: UTF-8 info + Run & Submit buttons */}
-            <div className="h-12 bg-[#1C2024] border-t border-[#343B42] px-3 sm:px-4 flex items-center justify-between shrink-0">
-              <div className="flex items-center gap-2 text-label-xs text-muted font-mono">
+            {/* ── BOTTOM ACTION TRAY ─────────────────────────────────────── */}
+            <div className="h-12 bg-[#1C2022] border-t border-[#343A40] px-3 sm:px-4 flex items-center justify-between shrink-0">
+              <div className="flex items-center gap-2 text-xs text-[#737E89] font-mono">
                 <span>Tab: 4 spaces</span>
                 <span>·</span>
                 <span>UTF-8</span>
@@ -545,12 +715,12 @@ export default function CodingWorkspacePage() {
                 <button
                   onClick={handleRunCode}
                   disabled={isRunning || isSubmitting}
-                  className="btn btn-secondary btn-sm flex items-center gap-1.5 font-mono min-h-[36px]"
+                  className="btn btn-secondary text-xs flex items-center gap-1.5 font-mono min-h-[36px]"
                 >
                   <Icon
                     name={isRunning ? 'sync' : 'play_arrow'}
                     size={16}
-                    className={isRunning ? 'animate-spin text-primary' : 'text-primary'}
+                    className={isRunning ? 'animate-spin text-[#60E3D0]' : 'text-[#60E3D0]'}
                   />
                   <span>{isRunning ? 'Running...' : 'Run Code'}</span>
                 </button>
@@ -558,14 +728,14 @@ export default function CodingWorkspacePage() {
                 <button
                   onClick={handleSubmitSolution}
                   disabled={isRunning || isSubmitting}
-                  className="btn btn-primary btn-sm flex items-center gap-1.5 font-mono min-h-[36px]"
+                  className="btn btn-primary text-xs flex items-center gap-1.5 font-mono min-h-[36px]"
                 >
                   <Icon
                     name={isSubmitting ? 'sync' : 'publish'}
                     size={16}
                     className={isSubmitting ? 'animate-spin' : ''}
                   />
-                  <span>{isSubmitting ? 'Submitting...' : 'Submit Proof'}</span>
+                  <span>{isSubmitting ? 'Submitting...' : 'Submit Solution'}</span>
                 </button>
               </div>
             </div>

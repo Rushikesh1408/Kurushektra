@@ -1,173 +1,191 @@
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
-import { Icon, ProgressBar, SimulatedDemoLabel, SectionHeader, MetricCard, MasteryBadge } from '../../components/ui';
-import { mockMastery, mockGaps } from '../../data/mockData';
+import { Icon, ProgressBar, SectionHeader, MasteryBadge, StatusBadge } from '../../components/ui';
+import { mockMastery, mockGaps, mockSubmissions } from '../../data/mockData';
 
 export default function DashboardPage() {
   const { user } = useAuth();
   const topMastery = mockMastery.slice(0, 4);
+  const recentSubmissions = mockSubmissions.slice(0, 4);
 
   return (
-    <div className="space-y-5 animate-fade-in">
-      {/* Top Welcome / System Status Banner */}
-      <div className="card p-4 sm:p-6 flex flex-col md:flex-row md:items-center justify-between gap-4 bg-[#1C2024] border-[#343B42]">
+    <div className="space-y-6 animate-fade-in max-w-6xl mx-auto">
+      {/* ── 1. WELCOME & MOTIVATIONAL HEADER ────────────────────────────── */}
+      <div className="card p-5 sm:p-6 flex flex-col md:flex-row md:items-center justify-between gap-4 bg-[#1C2022] border-[#343A40]">
         <div className="space-y-1.5">
-          <div className="flex items-center gap-2 flex-wrap">
-            <SimulatedDemoLabel />
-            <span className="text-code-sm text-muted font-mono">· Engine: v2.4-sandbox</span>
-            <span className="text-[11px] font-mono px-2 py-0.5 rounded bg-[#242A30] text-[#A7B0B9] border border-[#343B42]">
-              AST Verification Active
-            </span>
+          <div className="flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-[#60E3D0]" />
+            <span className="text-xs font-mono text-[#60E3D0] uppercase font-semibold">Active Learning Journey</span>
           </div>
-          <h1 className="text-headline-lg font-bold text-primary-text tracking-tight">
-            Welcome back, {user?.name?.split(' ')[0] || 'Engineer'}.
+          <h1 className="text-2xl sm:text-3xl font-bold text-[#F2F3F5] tracking-tight">
+            Welcome back, {user?.name?.split(' ')[0] || 'Learner'}!
           </h1>
-          <p className="text-body-md text-secondary-text max-w-2xl">
-            Your verification queue has 1 in-flight diagnostic and 2 high-priority edge case reviews pending. Prove you understand what you write.
+          <p className="text-sm text-[#B7BEC5] max-w-2xl leading-relaxed">
+            You're making steady progress. Continue with your active challenge or focus on your recommended practice task to solidify key algorithmic concepts.
           </p>
         </div>
 
         <div className="flex items-center gap-2.5 shrink-0">
-          <Link to="/settings" className="btn btn-secondary btn-sm">
-            <Icon name="tune" size={16} />
-            <span>Preferences</span>
+          <Link to="/challenges" className="btn btn-secondary text-xs font-mono">
+            <Icon name="list" size={16} />
+            <span>All Challenges</span>
           </Link>
-          <Link to="/challenges" className="btn btn-primary btn-sm">
-            <Icon name="terminal" size={16} />
-            <span>Browse Challenges</span>
+          <Link to="/workspace/c1" className="btn btn-primary text-xs font-mono">
+            <Icon name="play_arrow" size={16} />
+            <span>Resume Workspace</span>
           </Link>
         </div>
       </div>
 
-      {/* Primary Workspace Grid: Active Target & Targeted Remediation */}
+      {/* ── 2. CONTINUE LEARNING & RECOMMENDED CHALLENGE ────────────────── */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
         {/* Active Target Card */}
-        <div className="card lg:col-span-8 p-4 sm:p-5 flex flex-col justify-between bg-[#1C2024] border-[#343B42] relative overflow-hidden">
+        <div className="card lg:col-span-8 p-5 sm:p-6 flex flex-col justify-between bg-[#1C2022] border-[#343A40] space-y-4">
           <div>
             <SectionHeader
               icon="play_circle"
-              title="Active Workspace Target"
-              subtitle="Current algorithmic verification target"
+              title="Continue Learning"
+              subtitle="Current Challenge in Progress"
               action={
-                <span className="flex items-center gap-1.5 text-label-xs font-mono text-secondary-text">
-                  <Icon name="timelapse" size={15} className="text-primary" />
-                  <span>Est. 8 mins remaining</span>
+                <span className="badge badge-primary text-xs font-mono">
+                  In Progress
                 </span>
               }
             />
 
-            <div className="mb-4">
-              <div className="flex items-center gap-2 mb-1.5">
-                <span className="badge badge-neutral text-label-xs font-mono">
-                  ALGO-0149 · Invariant Validation
-                </span>
-                <span className="badge badge-primary text-label-xs font-mono">
-                  In Progress
-                </span>
+            <div className="space-y-2 mt-2">
+              <div className="flex items-center gap-2">
+                <span className="badge badge-neutral text-xs font-mono">Data Structures</span>
+                <span className="text-xs text-[#737E89] font-mono">Estimated time: 10 mins</span>
               </div>
-              <h2 className="text-headline-md font-bold text-primary-text mb-2">
-                Two Sum Optimization — Invariants & Collision Mechanics
+              <h2 className="text-xl font-bold text-[#F2F3F5]">
+                Two Sum — Hash Map Optimization
               </h2>
-              <p className="text-body-md text-secondary-text leading-relaxed">
-                Formal verification of amortized O(1) hash lookups under extreme memory constraints. Currently analyzing index persistence and negative complement handling under hash bucket collision stress.
+              <p className="text-sm text-[#B7BEC5] leading-relaxed">
+                Learn how to trade linear memory for constant lookup time. Instead of quadratic brute-force nested loops, check whether each number's complement is already in your hash map.
               </p>
             </div>
 
-            {/* Telemetry Snapshot Cards */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 p-3 rounded bg-[#171A1E] border border-[#343B42] mb-4 font-mono">
-              <div>
-                <span className="text-[11px] text-muted uppercase block">Step Progress</span>
-                <span className="text-headline-sm font-semibold text-primary-text">2 of 5 Verified</span>
+            {/* Why this is recommended */}
+            <div className="mt-4 p-3.5 rounded-lg bg-[#15181A] border border-[#343A40] space-y-1">
+              <div className="flex items-center gap-2 text-xs font-semibold text-[#8FAFF5]">
+                <Icon name="lightbulb" size={15} />
+                <span>Why this challenge is recommended for you</span>
               </div>
-              <div>
-                <span className="text-[11px] text-muted uppercase block">Unit Coverage</span>
-                <span className="text-headline-sm font-semibold text-[#83D69A]">40.0% Tests</span>
-              </div>
-              <div>
-                <span className="text-[11px] text-muted uppercase block">Branch Invariants</span>
-                <span className="text-headline-sm font-semibold text-primary">Passing Bounds</span>
-              </div>
+              <p className="text-xs text-[#B7BEC5] leading-relaxed">
+                Based on your recent submissions, you have strong loop fundamentals and are ready to master constant-time hash map lookups.
+              </p>
             </div>
 
-            <ProgressBar value={40} variant="primary" showLabel className="mb-4" />
+            {/* Current Test Case Progress */}
+            <div className="mt-4 space-y-1.5">
+              <div className="flex justify-between items-center text-xs font-mono text-[#B7BEC5]">
+                <span>Test Cases Passed: 2 of 5</span>
+                <span className="text-[#60E3D0] font-semibold">40% Complete</span>
+              </div>
+              <ProgressBar value={40} variant="primary" />
+            </div>
           </div>
 
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-3 border-t border-[#343B42]">
-            <div className="flex flex-wrap items-center gap-3 text-code-sm text-secondary-text font-mono">
-              <span className="flex items-center gap-1 text-[#83D69A]">
-                <Icon name="check_circle" size={16} />
-                <span>Space Complexity: O(n)</span>
-              </span>
-              <span className="flex items-center gap-1 text-[#E9B567]">
-                <Icon name="pending" size={16} />
-                <span>Duplicate Value Pointer</span>
-              </span>
-            </div>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-3 border-t border-[#343A40]">
+            <span className="text-xs text-[#B7BEC5] flex items-center gap-1.5">
+              <Icon name="info" size={15} className="text-[#60E3D0]" />
+              <span>Edge cases remaining: negative integers and identical duplicate elements</span>
+            </span>
 
             <div className="flex items-center gap-2">
-              <Link to="/challenges/c1" className="btn btn-secondary btn-sm">
-                Review Spec
+              <Link to="/challenges/c1" className="btn btn-secondary text-xs font-mono">
+                Challenge Details
               </Link>
-              <Link to="/workspace/c1" className="btn btn-primary btn-sm">
-                <span>Resume IDE</span>
-                <Icon name="arrow_forward" size={16} />
+              <Link to="/workspace/c1" className="btn btn-primary text-xs font-mono flex items-center gap-1">
+                <span>Resume Coding</span>
+                <Icon name="arrow_forward" size={14} />
               </Link>
             </div>
           </div>
         </div>
 
-        {/* Targeted Remediation Card */}
-        <div className="card lg:col-span-4 p-4 sm:p-5 flex flex-col justify-between bg-[#1C2024] border-[#343B42]">
+        {/* Next Recommended Practice Task */}
+        <div className="card lg:col-span-4 p-5 sm:p-6 flex flex-col justify-between bg-[#1C2022] border-[#343A40] space-y-4">
           <div>
             <SectionHeader
-              icon="flag"
-              title="Targeted Remediation"
-              subtitle="Diagnostic gap"
-              badge={<span className="badge badge-error">Off-By-One</span>}
+              icon="fitness_center"
+              title="Next Recommended Task"
+              subtitle="Targeted Practice Drill"
+              badge={<span className="badge badge-warning text-xs font-mono">High Impact</span>}
             />
 
-            <h3 className="text-headline-sm font-bold text-primary-text mb-2">
-              Binary Search (Boundary Gap)
+            <h3 className="text-base font-bold text-[#F2F3F5] mt-2 mb-1.5">
+              Binary Search Boundary Drill
             </h3>
-            <p className="text-body-md text-secondary-text mb-4 leading-relaxed">
-              Your last benchmark failed when index bounds equaled <code className="text-code-sm bg-[#171A1E] px-1.5 py-0.5 rounded border border-[#343B42] text-primary">left == right</code> on single-element slices.
+            <p className="text-xs sm:text-sm text-[#B7BEC5] leading-relaxed mb-3">
+              Strengthen off-by-one boundary handling when pointers converge (<code className="text-xs bg-[#15181A] px-1 py-0.5 rounded text-[#60E3D0]">left == right</code>) on single-element arrays.
             </p>
 
-            <div className="p-3 rounded bg-[#171A1E] border border-[#343B42] mb-4 font-mono text-code-sm">
-              <div className="flex justify-between items-center mb-2 text-label-xs">
-                <span className="text-muted">Pointer Delta:</span>
-                <span className="text-[#E98779] font-bold">FAIL: right = mid - 1</span>
-              </div>
-              <div className="flex items-center justify-center gap-2 py-1.5 bg-[#111315] rounded border border-[#343B42]/60">
-                <span className="badge badge-neutral text-label-xs">L: 0</span>
-                <span className="text-muted">→</span>
-                <span className="px-2 py-0.5 rounded bg-[#E98779]/20 border border-[#E98779]/40 text-[#E98779] font-bold text-label-xs">
-                  M: 0
-                </span>
-                <span className="text-muted">←</span>
-                <span className="badge badge-neutral text-label-xs">R: 0</span>
-              </div>
+            <div className="p-3 rounded bg-[#15181A] border border-[#343A40] space-y-1.5 text-xs text-[#B7BEC5]">
+              <span className="text-[#F2B866] font-semibold flex items-center gap-1">
+                <Icon name="flag" size={14} /> Key concept to practice:
+              </span>
+              <p>Ensuring the while condition <code className="text-[#F2F3F5]">while left &lt;= right</code> checks the final remaining candidate element.</p>
             </div>
           </div>
 
-          <Link to="/learn/gap/g1" className="btn btn-secondary w-full justify-center mt-2">
-            <Icon name="splitscreen" size={18} />
-            <span>Launch Remediation</span>
+          <Link to="/practice/a1" className="btn btn-secondary w-full justify-center text-xs font-mono flex items-center gap-2">
+            <Icon name="play_arrow" size={16} className="text-[#60E3D0]" />
+            <span>Start Practice Drill (5 mins)</span>
           </Link>
         </div>
       </div>
 
-      {/* Second Row: Mastery Snapshot & Identified Weak Spots */}
+      {/* ── 3. WEAK CONCEPTS & PREREQUISITE GAPS ─────────────────────────── */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
-        {/* Concept Mastery Snapshot */}
-        <div className="card lg:col-span-6 p-4 sm:p-5 bg-[#1C2024] border-[#343B42]">
+        {/* Identified Weak Concepts */}
+        <div className="card lg:col-span-6 p-5 sm:p-6 bg-[#1C2022] border-[#343A40] space-y-4">
           <SectionHeader
-            icon="analytics"
-            title="Concept Mastery Snapshot"
-            subtitle="Calculated from real execution assertions"
+            icon="psychology_alt"
+            title="Concepts Requiring Attention"
+            subtitle="Identified from recent test cases & reasoning questions"
+          />
+
+          <div className="space-y-3">
+            {mockGaps.map(gap => (
+              <div
+                key={gap.id}
+                className="p-3.5 rounded-lg bg-[#15181A] border border-[#343A40] space-y-2 hover:border-[#56606A] transition-colors"
+              >
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-semibold text-[#F2F3F5]">{gap.concept}</span>
+                  <span className={`badge text-xs font-mono ${gap.severity === 'high' ? 'badge-error' : 'badge-warning'}`}>
+                    {gap.severity === 'high' ? 'Needs Review' : 'Practice Recommended'}
+                  </span>
+                </div>
+                <p className="text-xs sm:text-sm text-[#B7BEC5] leading-relaxed">
+                  {gap.description}
+                </p>
+                <div className="flex items-center justify-between pt-1">
+                  <span className="text-[11px] text-[#737E89] font-mono">Found in 2 recent attempts</span>
+                  <Link
+                    to={`/learn/gap/${gap.id}`}
+                    className="text-xs font-mono text-[#60E3D0] hover:underline flex items-center gap-1"
+                  >
+                    <span>Remediate Concept</span>
+                    <Icon name="arrow_forward" size={12} />
+                  </Link>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Verified Mastery Progress */}
+        <div className="card lg:col-span-6 p-5 sm:p-6 bg-[#1C2022] border-[#343A40] space-y-4">
+          <SectionHeader
+            icon="insights"
+            title="Verified Mastery Progress"
+            subtitle="Demonstrated understanding across algorithmic topics"
             action={
-              <Link to="/mastery" className="text-label-xs text-primary hover:underline flex items-center gap-1 font-mono">
-                <span>View Full Map</span>
+              <Link to="/mastery" className="text-xs text-[#60E3D0] hover:underline flex items-center gap-1 font-mono">
+                <span>View Full Path</span>
                 <Icon name="arrow_forward" size={14} />
               </Link>
             }
@@ -175,71 +193,79 @@ export default function DashboardPage() {
 
           <div className="space-y-4">
             {topMastery.map(m => (
-              <div key={m.concept} className="space-y-1.5">
-                <div className="flex items-center justify-between text-body-sm">
+              <div key={m.concept} className="space-y-1.5 p-3 rounded-lg bg-[#15181A] border border-[#343A40]">
+                <div className="flex items-center justify-between text-sm">
                   <div className="flex items-center gap-2">
-                    <span className="font-semibold text-primary-text">{m.concept}</span>
+                    <span className="font-semibold text-[#F2F3F5]">{m.concept}</span>
                     <MasteryBadge level={m.level} />
                   </div>
-                  <span className="text-code-sm font-bold font-mono text-primary">{m.percentage}%</span>
+                  <span className="text-xs font-bold font-mono text-[#60E3D0]">{m.percentage}%</span>
                 </div>
                 <ProgressBar
                   value={m.percentage}
                   variant={m.percentage >= 80 ? 'success' : m.percentage >= 50 ? 'primary' : 'warning'}
                 />
-                <div className="flex justify-between items-center text-[11px] font-mono text-muted">
-                  <span>{m.testsCompleted}/{m.testsTotal} assertions verified</span>
+                <div className="flex justify-between items-center text-[11px] font-mono text-[#737E89] pt-0.5">
+                  <span>{m.testsCompleted} of {m.testsTotal} challenges verified</span>
                   <span>Confidence: {m.confidence}</span>
                 </div>
               </div>
             ))}
           </div>
         </div>
-
-        {/* Identified Weak Spots */}
-        <div className="card lg:col-span-6 p-4 sm:p-5 bg-[#1C2024] border-[#343B42]">
-          <SectionHeader
-            icon="warning"
-            title="Identified Concept Gaps"
-            subtitle={`${mockGaps.length} areas requiring verification`}
-          />
-
-          <div className="space-y-3">
-            {mockGaps.map(gap => (
-              <div
-                key={gap.id}
-                className="card-elevated p-3 sm:p-3.5 flex items-start justify-between gap-3 bg-[#242A30] border-[#343B42]"
-              >
-                <div className="space-y-1">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className={`badge ${gap.severity === 'high' ? 'badge-error' : 'badge-warning'}`}>
-                      {gap.severity} Priority
-                    </span>
-                    <span className="text-body-sm font-bold text-primary-text">{gap.concept}</span>
-                  </div>
-                  <p className="text-body-sm text-secondary-text line-clamp-2">
-                    {gap.description}
-                  </p>
-                </div>
-                <Link
-                  to={`/learn/gap/${gap.id}`}
-                  className="btn btn-secondary btn-sm shrink-0 font-mono"
-                >
-                  Inspect
-                </Link>
-              </div>
-            ))}
-          </div>
-        </div>
       </div>
 
-      {/* Metrics Row */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
-        <MetricCard label="Solved" value="8" icon="check_circle" sub="3 this week" />
-        <MetricCard label="Acceptance" value="66%" icon="analytics" sub="31/47 runs" />
-        <MetricCard label="Streak" value="7 Days" icon="local_fire_department" sub="Consecutive" />
-        <MetricCard label="Mastered" value="2 / 8" icon="school" sub="Concepts locked" />
-        <MetricCard label="Avg Runtime" value="43ms" icon="speed" sub="Verified engine" />
+      {/* ── 4. RECENT SUBMISSIONS & RESULTS ─────────────────────────────── */}
+      <div className="card p-5 sm:p-6 bg-[#1C2022] border-[#343A40] space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+          <SectionHeader
+            icon="history"
+            title="Recent Submissions & Results"
+            subtitle="Review your latest code attempts and test case breakdowns"
+          />
+          <Link to="/history" className="text-xs font-mono text-[#60E3D0] hover:underline flex items-center gap-1">
+            <span>View All History</span>
+            <Icon name="arrow_forward" size={14} />
+          </Link>
+        </div>
+
+        <div className="space-y-2.5">
+          {recentSubmissions.map(sub => (
+            <div
+              key={sub.id}
+              className="p-3.5 rounded-lg bg-[#15181A] border border-[#343A40] flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:border-[#56606A] transition-colors"
+            >
+              <div className="space-y-0.5">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="text-sm font-semibold text-[#F2F3F5]">{sub.challengeTitle}</span>
+                  <StatusBadge status={sub.status} />
+                </div>
+                <div className="flex items-center gap-3 text-xs text-[#737E89] font-mono">
+                  <span>{sub.language.toUpperCase()}</span>
+                  <span>·</span>
+                  <span>{sub.testsPassed} of {sub.testsTotal} tests passed</span>
+                  <span>·</span>
+                  <span>{new Date(sub.submittedAt).toLocaleDateString()}</span>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2 shrink-0">
+                <Link
+                  to={`/submissions/${sub.id}`}
+                  className="btn btn-secondary text-xs font-mono py-1 px-2.5"
+                >
+                  <span>Review Test Run</span>
+                </Link>
+                <Link
+                  to={`/assessment/${sub.id}`}
+                  className="btn btn-primary text-xs font-mono py-1 px-2.5"
+                >
+                  <span>Explain Code</span>
+                </Link>
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );

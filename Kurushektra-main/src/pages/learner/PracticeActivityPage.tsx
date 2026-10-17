@@ -27,7 +27,7 @@ export default function PracticeActivityPage() {
   return (
     <div className="max-w-3xl mx-auto space-y-5 animate-fade-in">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-[#343B42]">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-[#343A40]">
         <div>
           <div className="flex items-center gap-2 text-label-xs font-mono text-muted uppercase mb-1">
             <Link to={`/learn/gap/${relatedGap.id}`} className="hover:text-primary transition-colors flex items-center gap-1">
@@ -46,7 +46,7 @@ export default function PracticeActivityPage() {
       </div>
 
       {/* Main Exercise Card */}
-      <div className="card p-5 sm:p-6 bg-[#1C2024] border-[#343B42] space-y-6">
+      <div className="card p-5 sm:p-6 bg-[#1C2022] border-[#343A40] space-y-6">
         <div>
           <span className="text-label-xs font-mono uppercase text-muted block mb-1">PRACTICE PROMPT</span>
           <h2 className="text-headline-md font-bold text-primary-text leading-relaxed">
@@ -59,13 +59,13 @@ export default function PracticeActivityPage() {
           <div className="space-y-3">
             {activity.options.map((opt, i) => {
               const isSelected = selectedOption === opt;
-              let btnClass = 'bg-[#171A1E] border-[#343B42] text-secondary-text hover:border-[#525C66] hover:text-primary-text';
+              let btnClass = 'bg-[#171A1E] border-[#343A40] text-secondary-text hover:border-[#525C66] hover:text-primary-text';
 
               if (submitted) {
                 if (opt === activity.correctAnswer) {
                   btnClass = 'bg-[#83D69A]/15 border-[#83D69A] text-[#83D69A] font-semibold';
                 } else if (isSelected && !isCorrect) {
-                  btnClass = 'bg-[#E98779]/15 border-[#E98779] text-[#E98779] font-semibold';
+                  btnClass = 'bg-[#E99AA4]/15 border-[#E99AA4] text-[#E99AA4] font-semibold';
                 }
               } else if (isSelected) {
                 btnClass = 'bg-primary/10 border-primary text-primary font-semibold shadow-sm';
@@ -79,7 +79,7 @@ export default function PracticeActivityPage() {
                   className={`w-full p-4 rounded-md text-left transition-all border flex items-center justify-between font-mono text-code-sm min-h-[48px] ${btnClass}`}
                 >
                   <div className="flex items-center gap-3">
-                    <span className="w-6 h-6 rounded-full border border-[#343B42] bg-[#111315] flex items-center justify-center text-label-xs shrink-0 font-bold">
+                    <span className="w-6 h-6 rounded-full border border-[#343A40] bg-[#111315] flex items-center justify-center text-label-xs shrink-0 font-bold">
                       {String.fromCharCode(65 + i)}
                     </span>
                     <span className="leading-relaxed">{opt}</span>
@@ -88,7 +88,7 @@ export default function PracticeActivityPage() {
                     <Icon name="check_circle" size={18} className="text-[#83D69A] shrink-0" />
                   )}
                   {submitted && isSelected && !isCorrect && (
-                    <Icon name="cancel" size={18} className="text-[#E98779] shrink-0" />
+                    <Icon name="cancel" size={18} className="text-[#E99AA4] shrink-0" />
                   )}
                 </button>
               );
@@ -98,7 +98,7 @@ export default function PracticeActivityPage() {
 
         {/* Action Button */}
         {!submitted ? (
-          <div className="flex justify-end pt-3 border-t border-[#343B42]">
+          <div className="flex justify-end pt-3 border-t border-[#343A40]">
             <button
               onClick={handleSubmit}
               disabled={!selectedOption}
@@ -108,20 +108,20 @@ export default function PracticeActivityPage() {
             </button>
           </div>
         ) : (
-          <div className="space-y-4 pt-4 border-t border-[#343B42]">
+          <div className="space-y-4 pt-4 border-t border-[#343A40]">
             {/* Feedback alert */}
             <div className={`p-4 rounded-md border ${
               isCorrect
                 ? 'bg-[#83D69A]/10 border-[#83D69A]/30 text-primary-text'
-                : 'bg-[#E98779]/10 border-[#E98779]/30 text-primary-text'
+                : 'bg-[#E99AA4]/10 border-[#E99AA4]/30 text-primary-text'
             }`}>
               <div className="flex items-center gap-2 font-bold font-mono text-label-sm uppercase mb-1">
                 <Icon
                   name={isCorrect ? 'check_circle' : 'cancel'}
                   size={18}
-                  className={isCorrect ? 'text-[#83D69A]' : 'text-[#E98779]'}
+                  className={isCorrect ? 'text-[#83D69A]' : 'text-[#E99AA4]'}
                 />
-                <span className={isCorrect ? 'text-[#83D69A]' : 'text-[#E98779]'}>
+                <span className={isCorrect ? 'text-[#83D69A]' : 'text-[#E99AA4]'}>
                   {isCorrect ? 'Verification Passed!' : 'Verification Failed'}
                 </span>
               </div>
@@ -132,9 +132,9 @@ export default function PracticeActivityPage() {
 
             {/* Mastery Update notification */}
             {isCorrect && (
-              <div className="p-4 bg-[#171A1E] rounded-md border border-[#343B42] flex items-center justify-between gap-3">
+              <div className="p-4 bg-[#171A1E] rounded-md border border-[#343A40] flex items-center justify-between gap-3">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded bg-[#242A30] border border-[#343B42] flex items-center justify-center text-[#83D69A]">
+                  <div className="w-10 h-10 rounded bg-[#25292D] border border-[#343A40] flex items-center justify-center text-[#83D69A]">
                     <Icon name="military_tech" size={24} />
                   </div>
                   <div>

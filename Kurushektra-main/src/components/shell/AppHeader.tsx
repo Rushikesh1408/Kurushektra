@@ -42,23 +42,23 @@ export function AppHeader({ role, onOpenMobileMenu, isExplorerOpen, onToggleExpl
     if (p.startsWith('/teacher/learners')) return 'Learner Assessment Review';
     if (p.startsWith('/admin/users')) return 'User & Role Management';
     if (p.startsWith('/admin/settings')) return 'Platform Configuration';
-    return 'Congnicode';
+    return 'COGNICODE';
   };
 
   const roleBadgeStyle = role === 'admin'
-    ? 'bg-[#E98779]/15 text-[#E98779] border-[#E98779]/30'
+    ? 'bg-[#E99AA4]/15 text-[#E99AA4] border-[#E99AA4]/30'
     : role === 'teacher'
-    ? 'bg-[#E9B567]/15 text-[#E9B567] border-[#E9B567]/30'
-    : 'bg-[#42C7B5]/15 text-[#42C7B5] border-[#42C7B5]/30';
+    ? 'bg-[#F2B866]/15 text-[#F2B866] border-[#F2B866]/30'
+    : 'bg-[#60E3D0]/15 text-[#60E3D0] border-[#60E3D0]/30';
 
   return (
-    <header className="h-[48px] bg-[#1C2024] border-b border-[#343B42] px-3 sm:px-4 flex items-center justify-between shrink-0 z-30 select-none">
+    <header className="h-[48px] bg-[#1C2022] border-b border-[#343A40] px-3 sm:px-4 flex items-center justify-between shrink-0 z-30 select-none">
       {/* Left side: Mobile Toggle & Breadcrumbs */}
       <div className="flex items-center gap-2 sm:gap-3 min-w-0">
         {/* Mobile drawer toggle */}
         <button
           onClick={onOpenMobileMenu}
-          className="md:hidden w-8 h-8 rounded flex items-center justify-center text-[#A7B0B9] hover:text-[#F1F3F5] hover:bg-[#242A30] transition-colors"
+          className="md:hidden w-8 h-8 rounded flex items-center justify-center text-[#B7BEC5] hover:text-[#F2F3F5] hover:bg-[#25292D] transition-colors"
           aria-label="Open navigation menu"
         >
           <Icon name="menu" size={20} />
@@ -67,7 +67,7 @@ export function AppHeader({ role, onOpenMobileMenu, isExplorerOpen, onToggleExpl
         {/* Desktop explorer toggle */}
         <button
           onClick={onToggleExplorer}
-          className="hidden md:flex w-7 h-7 rounded items-center justify-center text-[#737E89] hover:text-[#F1F3F5] hover:bg-[#242A30] transition-colors"
+          className="hidden md:flex w-7 h-7 rounded items-center justify-center text-[#737E89] hover:text-[#F2F3F5] hover:bg-[#25292D] transition-colors"
           title={isExplorerOpen ? 'Hide Explorer' : 'Show Explorer'}
           aria-label={isExplorerOpen ? 'Hide Explorer' : 'Show Explorer'}
         >
@@ -76,18 +76,18 @@ export function AppHeader({ role, onOpenMobileMenu, isExplorerOpen, onToggleExpl
 
         {/* Breadcrumb Title */}
         <div className="flex items-center gap-1.5 text-body-sm text-[#737E89] font-mono truncate">
-          <span className="text-[#A7B0B9] hidden sm:inline">Congnicode</span>
+          <span className="text-[#B7BEC5] hidden sm:inline">COGNICODE</span>
           <span className="hidden sm:inline">/</span>
-          <span className="text-[#F1F3F5] font-medium truncate">{getPathTitle()}</span>
+          <span className="text-[#F2F3F5] font-medium truncate">{getPathTitle()}</span>
         </div>
       </div>
 
       {/* Center: Command Palette Trigger */}
       <div className="hidden lg:flex items-center flex-1 max-w-md mx-4">
-        <div className="w-full h-7 px-2.5 rounded bg-[#111315] border border-[#343B42] flex items-center justify-between text-code-sm text-[#737E89] hover:border-[#525C66] transition-colors cursor-pointer">
+        <div className="w-full h-7 px-2.5 rounded bg-[#111315] border border-[#343A40] flex items-center justify-between text-code-sm text-[#737E89] hover:border-[#56606A] transition-colors cursor-pointer">
           <div className="flex items-center gap-2">
             <Icon name="search" size={14} className="text-[#737E89]" />
-            <span className="text-secondary-text">Search challenges, syntax, AST proofs...</span>
+            <span className="text-[#B7BEC5]">Search challenges, syntax, AST proofs...</span>
           </div>
           <Kbd>⌘K</Kbd>
         </div>
@@ -96,20 +96,20 @@ export function AppHeader({ role, onOpenMobileMenu, isExplorerOpen, onToggleExpl
       {/* Right side: Telemetry badge, Role & User Avatar */}
       <div className="flex items-center gap-2 sm:gap-3 shrink-0">
         {/* Telemetry live status */}
-        <div className="hidden xl:flex items-center gap-1.5 px-2 py-0.5 rounded bg-[#111315] border border-[#343B42] text-[11px] font-mono text-[#A7B0B9]">
-          <span className="w-1.5 h-1.5 rounded-full bg-[#42C7B5] animate-pulse" />
+        <div className="hidden xl:flex items-center gap-1.5 px-2 py-0.5 rounded bg-[#111315] border border-[#343A40] text-xs font-mono text-[#B7BEC5]">
+          <span className="w-1.5 h-1.5 rounded-full bg-[#60E3D0] animate-pulse" />
           <span>v2.4-sandbox</span>
         </div>
 
         {/* Role Badge */}
-        <span className={`px-2 py-0.5 rounded text-[11px] font-mono font-semibold uppercase tracking-wider border ${roleBadgeStyle}`}>
+        <span className={`px-2 py-0.5 rounded text-xs font-mono font-semibold uppercase tracking-wider border ${roleBadgeStyle}`}>
           {role}
         </span>
 
         {/* Settings shortcut */}
         <Link
           to="/settings"
-          className="w-8 h-8 rounded flex items-center justify-center text-[#A7B0B9] hover:text-[#F1F3F5] hover:bg-[#242A30] transition-colors"
+          className="w-8 h-8 rounded flex items-center justify-center text-[#B7BEC5] hover:text-[#F2F3F5] hover:bg-[#25292D] transition-colors"
           title="Settings"
           aria-label="Settings"
         >
@@ -120,7 +120,7 @@ export function AppHeader({ role, onOpenMobileMenu, isExplorerOpen, onToggleExpl
         <div className="relative">
           <button
             onClick={() => setProfileOpen(p => !p)}
-            className="w-8 h-8 rounded-full bg-[#242A30] border border-[#343B42] hover:border-primary flex items-center justify-center text-[#F1F3F5] text-label-sm font-semibold transition-colors cursor-pointer"
+            className="w-8 h-8 rounded-full bg-[#25292D] border border-[#343A40] hover:border-[#60E3D0] flex items-center justify-center text-[#F2F3F5] text-xs font-semibold transition-colors cursor-pointer"
             aria-label="User menu"
             aria-expanded={profileOpen}
           >
@@ -129,12 +129,12 @@ export function AppHeader({ role, onOpenMobileMenu, isExplorerOpen, onToggleExpl
 
           {profileOpen && (
             <div
-              className="absolute right-0 top-10 w-56 bg-[#1C2024] border border-[#343B42] rounded-md shadow-2xl p-1 z-50 animate-fade-in"
+              className="absolute right-0 top-10 w-56 bg-[#1C2022] border border-[#343A40] rounded-md shadow-2xl p-1 z-50 animate-fade-in"
               onMouseLeave={() => setProfileOpen(false)}
             >
-              <div className="px-3 py-2 border-b border-[#343B42] mb-1">
-                <p className="text-body-sm font-semibold text-[#F1F3F5] truncate">{user?.name || 'Congnicode User'}</p>
-                <p className="text-code-sm text-[#737E89] truncate">{user?.email || 'user@congnicode.dev'}</p>
+              <div className="px-3 py-2 border-b border-[#343A40] mb-1">
+                <p className="text-body-sm font-semibold text-[#F2F3F5] truncate">{user?.name || 'COGNICODE User'}</p>
+                <p className="text-code-sm text-[#737E89] truncate">{user?.email || 'user@cognicode.dev'}</p>
               </div>
 
               <Link

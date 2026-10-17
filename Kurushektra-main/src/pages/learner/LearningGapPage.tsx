@@ -32,7 +32,7 @@ export default function LearningGapPage() {
   return (
     <div className="max-w-4xl mx-auto space-y-5 animate-fade-in">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-[#343B42]">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-[#343A40]">
         <div>
           <div className="flex items-center gap-2 text-label-xs font-mono text-muted uppercase mb-1">
             <Link to="/mastery" className="hover:text-primary transition-colors">Mastery</Link>
@@ -53,9 +53,9 @@ export default function LearningGapPage() {
       </div>
 
       {/* Diagnostic Summary Card */}
-      <div className="card p-5 sm:p-6 bg-[#1C2024] border-[#343B42] space-y-4">
+      <div className="card p-5 sm:p-6 bg-[#1C2022] border-[#343A40] space-y-4">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded bg-[#242A30] text-[#E9B567] border border-[#343B42] flex items-center justify-center shrink-0">
+          <div className="w-10 h-10 rounded bg-[#25292D] text-[#F2B866] border border-[#343A40] flex items-center justify-center shrink-0">
             <Icon name="biotech" size={20} />
           </div>
           <div>
@@ -70,7 +70,7 @@ export default function LearningGapPage() {
       </div>
 
       {/* Interactive Step-by-Step Code Walkthrough */}
-      <div className="card p-5 sm:p-6 bg-[#1C2024] border-[#343B42] space-y-4">
+      <div className="card p-5 sm:p-6 bg-[#1C2022] border-[#343A40] space-y-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Icon name="schema" size={18} className="text-primary" />
@@ -82,7 +82,7 @@ export default function LearningGapPage() {
         </div>
 
         {/* Step Tabs */}
-        <div className="flex gap-2 border-b border-[#343B42] pb-2 overflow-x-auto">
+        <div className="flex gap-2 border-b border-[#343A40] pb-2 overflow-x-auto">
           {walkthroughSteps.map((step, idx) => (
             <button
               key={idx}
@@ -90,7 +90,7 @@ export default function LearningGapPage() {
               className={`px-3 py-1.5 rounded font-mono text-label-xs uppercase transition-colors shrink-0 border min-h-[36px] ${
                 activeStep === idx
                   ? 'bg-primary/15 text-primary font-bold border-primary/40'
-                  : 'bg-[#171A1E] text-secondary-text hover:text-primary-text border-[#343B42]'
+                  : 'bg-[#171A1E] text-secondary-text hover:text-primary-text border-[#343A40]'
               }`}
             >
               {step.title}
@@ -106,7 +106,7 @@ export default function LearningGapPage() {
           <CodeBlock code={walkthroughSteps[activeStep].code} language="python" />
         </div>
 
-        <div className="flex items-center justify-between pt-3 border-t border-[#343B42]">
+        <div className="flex items-center justify-between pt-3 border-t border-[#343A40]">
           <button
             onClick={() => setActiveStep(p => Math.max(0, p - 1))}
             disabled={activeStep === 0}
@@ -127,14 +127,14 @@ export default function LearningGapPage() {
       </div>
 
       {/* Curated Resources */}
-      <div className="card p-5 sm:p-6 bg-[#1C2024] border-[#343B42] space-y-4">
+      <div className="card p-5 sm:p-6 bg-[#1C2022] border-[#343A40] space-y-4">
         <div className="flex items-center gap-2">
           <Icon name="menu_book" size={18} className="text-primary" />
           <h2 className="text-headline-sm font-bold text-primary-text">Curated Reference Materials</h2>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
           {gap.resources.map((res, i) => (
-            <div key={i} className="p-4 bg-[#171A1E] rounded border border-[#343B42] flex flex-col justify-between gap-3">
+            <div key={i} className="p-4 bg-[#171A1E] rounded border border-[#343A40] flex flex-col justify-between gap-3">
               <div className="flex items-center gap-2">
                 <Icon
                   name={res.type === 'video' ? 'smart_display' : res.type === 'exercise' ? 'fitness_center' : 'description'}

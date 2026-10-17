@@ -27,8 +27,8 @@ export function Icon({ name, size = 18, className = '', style }: IconProps) {
 export function DifficultyBadge({ difficulty }: { difficulty: Difficulty }) {
   const map: Record<Difficulty, { cls: string; dot: string; label: string }> = {
     easy:   { cls: 'badge-success', dot: 'bg-[#83D69A]', label: 'Easy' },
-    medium: { cls: 'badge-warning', dot: 'bg-[#E9B567]', label: 'Medium' },
-    hard:   { cls: 'badge-error',   dot: 'bg-[#E98779]', label: 'Hard' },
+    medium: { cls: 'badge-warning', dot: 'bg-[#F2B866]', label: 'Medium' },
+    hard:   { cls: 'badge-error',   dot: 'bg-[#E99AA4]', label: 'Hard' },
   };
   const item = map[difficulty] || map.medium;
   return (
@@ -43,15 +43,15 @@ export function DifficultyBadge({ difficulty }: { difficulty: Difficulty }) {
 export function StatusBadge({ status }: { status: SubmissionStatus }) {
   const cfg: Record<SubmissionStatus, { cls: string; label: string; dot: string }> = {
     accepted:           { cls: 'badge-success',  label: 'Accepted',             dot: 'bg-[#83D69A]' },
-    wrong_answer:       { cls: 'badge-error',    label: 'Wrong Answer',         dot: 'bg-[#E98779]' },
-    partial_pass:       { cls: 'badge-warning',  label: 'Partial Pass',         dot: 'bg-[#E9B567]' },
-    compile_error:      { cls: 'badge-error',    label: 'Compile Error',        dot: 'bg-[#E98779]' },
-    runtime_error:      { cls: 'badge-error',    label: 'Runtime Error',        dot: 'bg-[#E98779]' },
-    timeout:            { cls: 'badge-warning',  label: 'Time Limit Exceeded',  dot: 'bg-[#E9B567]' },
-    pending:            { cls: 'badge-neutral',  label: 'Pending',              dot: 'bg-[#525C66]' },
-    service_unavailable:{ cls: 'badge-neutral',  label: 'Service Unavailable',  dot: 'bg-[#525C66]' },
-    live_execution:     { cls: 'badge-primary',  label: 'Live Execution',       dot: 'bg-[#42C7B5]' },
-    simulated_demo:     { cls: 'badge-warning',  label: 'Simulated Demo',       dot: 'bg-[#E9B567]' },
+    wrong_answer:       { cls: 'badge-error',    label: 'Wrong Answer',         dot: 'bg-[#E99AA4]' },
+    partial_pass:       { cls: 'badge-warning',  label: 'Partial Pass',         dot: 'bg-[#F2B866]' },
+    compile_error:      { cls: 'badge-error',    label: 'Compile Error',        dot: 'bg-[#E99AA4]' },
+    runtime_error:      { cls: 'badge-error',    label: 'Runtime Error',        dot: 'bg-[#E99AA4]' },
+    timeout:            { cls: 'badge-warning',  label: 'Time Limit Exceeded',  dot: 'bg-[#F2B866]' },
+    pending:            { cls: 'badge-neutral',  label: 'Pending',              dot: 'bg-[#56606A]' },
+    service_unavailable:{ cls: 'badge-neutral',  label: 'Service Unavailable',  dot: 'bg-[#56606A]' },
+    live_execution:     { cls: 'badge-primary',  label: 'Live Execution',       dot: 'bg-[#60E3D0]' },
+    simulated_demo:     { cls: 'badge-warning',  label: 'Simulated Demo',       dot: 'bg-[#F2B866]' },
   };
   const item = cfg[status] || cfg.pending;
   return (
@@ -65,9 +65,9 @@ export function StatusBadge({ status }: { status: SubmissionStatus }) {
 // ── Mastery Badge ─────────────────────────────────────────────────────────
 export function MasteryBadge({ level }: { level: MasteryLevel }) {
   const cfg: Record<MasteryLevel, { cls: string; label: string; dot: string }> = {
-    not_started:  { cls: 'badge-neutral', label: 'Not Started',  dot: 'bg-[#525C66]' },
-    developing:   { cls: 'badge-neutral', label: 'Developing',   dot: 'bg-[#8FAFD6]' },
-    demonstrated: { cls: 'badge-info',    label: 'Demonstrated', dot: 'bg-[#8FAFD6]' },
+    not_started:  { cls: 'badge-neutral', label: 'Not Started',  dot: 'bg-[#56606A]' },
+    developing:   { cls: 'badge-neutral', label: 'Developing',   dot: 'bg-[#8FAFF5]' },
+    demonstrated: { cls: 'badge-info',    label: 'Demonstrated', dot: 'bg-[#8FAFF5]' },
     mastered:     { cls: 'badge-success', label: 'Mastered',     dot: 'bg-[#83D69A]' },
   };
   const item = cfg[level] || cfg.not_started;
@@ -115,7 +115,7 @@ export function ProgressBar({ value, max = 100, variant = 'primary', className =
     : variant === 'warning'
     ? 'progress-warning'
     : variant === 'error'
-    ? 'bg-[#E98779]'
+    ? 'bg-[#E99AA4]'
     : 'progress-primary';
 
   return (

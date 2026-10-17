@@ -48,7 +48,7 @@ export default function SignUpPage() {
         placeholder={placeholder}
         required
       />
-      {errors[key] && <p className="text-code-sm text-[#E98779] font-mono">{errors[key]}</p>}
+      {errors[key] && <p className="text-code-sm text-[#E99AA4] font-mono">{errors[key]}</p>}
     </div>
   );
 
@@ -57,7 +57,7 @@ export default function SignUpPage() {
       <div className="w-full max-w-md space-y-6">
         {/* Brand Header */}
         <div className="text-center space-y-2">
-          <div className="w-12 h-12 rounded-lg bg-[#1C2024] border border-[#343B42] flex items-center justify-center text-primary mx-auto shadow-md">
+          <div className="w-12 h-12 rounded-lg bg-[#1C2022] border border-[#343A40] flex items-center justify-center text-primary mx-auto shadow-md">
             <Icon name="terminal" size={24} />
           </div>
           <h1 className="text-headline-md font-bold text-primary-text tracking-tight">
@@ -69,7 +69,7 @@ export default function SignUpPage() {
         </div>
 
         {/* Form Card */}
-        <div className="card p-6 bg-[#1C2024] border-[#343B42] shadow-xl space-y-5">
+        <div className="card p-6 bg-[#1C2022] border-[#343A40] shadow-xl space-y-5">
           <form onSubmit={handleSubmit} className="space-y-4">
             {field('name', 'Full Name', 'text', 'Alex Chen')}
             {field('email', 'Email Address', 'email', 'developer@congnicode.dev')}

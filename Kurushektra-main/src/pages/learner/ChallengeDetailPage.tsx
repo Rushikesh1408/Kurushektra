@@ -83,7 +83,7 @@ export default function ChallengeDetailPage() {
       </div>
 
       {/* Hero Header */}
-      <div className="card p-5 sm:p-6 bg-[#1C2024] border-[#343B42] flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="card p-5 sm:p-6 bg-[#1C2022] border-[#343A40] flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="space-y-2">
           <div className="flex items-center gap-2.5 flex-wrap">
             <h1 className="text-headline-lg font-bold text-primary-text tracking-tight">
@@ -116,7 +116,7 @@ export default function ChallengeDetailPage() {
       </div>
 
       {/* Problem Statement Card */}
-      <div className="card p-5 bg-[#1C2024] border-[#343B42] space-y-3">
+      <div className="card p-5 bg-[#1C2022] border-[#343A40] space-y-3">
         <div className="flex items-center gap-2 text-primary">
           <Icon name="description" size={18} />
           <h2 className="text-headline-sm font-bold text-primary-text">Problem Specification</h2>
@@ -127,7 +127,7 @@ export default function ChallengeDetailPage() {
       </div>
 
       {/* Examples & Test Cases */}
-      <div className="card p-5 bg-[#1C2024] border-[#343B42] space-y-4">
+      <div className="card p-5 bg-[#1C2022] border-[#343A40] space-y-4">
         <div className="flex items-center gap-2 text-primary">
           <Icon name="checklist" size={18} />
           <h2 className="text-headline-sm font-bold text-primary-text">Visible Test Assertions</h2>
@@ -135,19 +135,19 @@ export default function ChallengeDetailPage() {
 
         <div className="space-y-3">
           {challenge.examples.map((ex, i) => (
-            <div key={i} className="p-3.5 rounded bg-[#171A1E] border border-[#343B42] space-y-2 font-mono text-code-sm">
+            <div key={i} className="p-3.5 rounded bg-[#171A1E] border border-[#343A40] space-y-2 font-mono text-code-sm">
               <span className="text-[11px] font-bold text-primary uppercase tracking-wider block">
                 Example #{i + 1}
               </span>
               <div className="flex flex-col sm:flex-row sm:items-start gap-1 sm:gap-4">
                 <span className="text-muted shrink-0 w-16">Input:</span>
-                <span className="text-primary-text bg-[#111315] px-2 py-0.5 rounded border border-[#343B42]/50 flex-1 overflow-x-auto">
+                <span className="text-primary-text bg-[#111315] px-2 py-0.5 rounded border border-[#343A40]/50 flex-1 overflow-x-auto">
                   {ex.input}
                 </span>
               </div>
               <div className="flex flex-col sm:flex-row sm:items-start gap-1 sm:gap-4">
                 <span className="text-muted shrink-0 w-16">Output:</span>
-                <span className="text-[#83D69A] bg-[#111315] px-2 py-0.5 rounded border border-[#343B42]/50 flex-1 overflow-x-auto">
+                <span className="text-[#83D69A] bg-[#111315] px-2 py-0.5 rounded border border-[#343A40]/50 flex-1 overflow-x-auto">
                   {ex.output}
                 </span>
               </div>
@@ -165,7 +165,7 @@ export default function ChallengeDetailPage() {
       </div>
 
       {/* Constraints */}
-      <div className="card p-5 bg-[#1C2024] border-[#343B42] space-y-3">
+      <div className="card p-5 bg-[#1C2022] border-[#343A40] space-y-3">
         <div className="flex items-center gap-2 text-primary">
           <Icon name="rule" size={18} />
           <h2 className="text-headline-sm font-bold text-primary-text">Execution Constraints</h2>
@@ -180,7 +180,7 @@ export default function ChallengeDetailPage() {
       </div>
 
       {/* Starter Code Preview */}
-      <div className="card p-5 bg-[#1C2024] border-[#343B42] space-y-3">
+      <div className="card p-5 bg-[#1C2022] border-[#343A40] space-y-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2 text-primary">
             <Icon name="code" size={18} />
@@ -193,7 +193,7 @@ export default function ChallengeDetailPage() {
 
       {/* My Past Submissions for this challenge */}
       {mySubmissions.length > 0 && (
-        <div className="card p-5 bg-[#1C2024] border-[#343B42] space-y-3">
+        <div className="card p-5 bg-[#1C2022] border-[#343A40] space-y-3">
           <div className="flex items-center gap-2 text-primary">
             <Icon name="history" size={18} />
             <h2 className="text-headline-sm font-bold text-primary-text">Recent Submissions</h2>
@@ -203,7 +203,7 @@ export default function ChallengeDetailPage() {
               <Link
                 key={s.id}
                 to={`/submissions/${s.id}`}
-                className="card-elevated p-3 flex items-center justify-between gap-3 bg-[#242A30] hover:border-primary transition-colors block"
+                className="card-elevated p-3 flex items-center justify-between gap-3 bg-[#25292D] hover:border-primary transition-colors block"
               >
                 <div className="flex items-center gap-3 font-mono text-code-sm flex-wrap">
                   <span className={`badge ${s.status === 'accepted' ? 'badge-success' : 'badge-error'}`}>
