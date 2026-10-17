@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from slowapi.middleware import SlowAPIMiddleware
 
 from app.api import (
-    adaptive, admin, auth, challenges, comprehension, demo, health,
+    adaptive, admin, auth, brain, challenges, comprehension, demo, health,
     learning, questions, reports, submissions, sync, tutor,
 )
 from app.core.config import get_settings
@@ -54,7 +54,7 @@ def create_app() -> FastAPI:
     register_error_handlers(app)
     for r in (health.router, auth.router, challenges.router, submissions.router, admin.router,
               reports.router, questions.router, demo.router, learning.router, adaptive.router,
-              comprehension.router, tutor.router, sync.router):
+              comprehension.router, tutor.router, brain.router, sync.router):
         app.include_router(r, prefix="/api/v1")
     return app
 

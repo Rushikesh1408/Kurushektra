@@ -12,4 +12,4 @@ from app.models.submissions import (  # noqa: F401
 )
 from app.models.sync import OfflineSyncRecord  # noqa: F401
 from app.models.users import AuditLog, Notification, Permission, RefreshToken, RolePermission, User  # noqa: F401
-
+from app.models.conversation import BrainConversation, BrainMessage  # noqa: F401

@@ -68,5 +68,5 @@ def test_alembic_migrations_and_schema_drift(db):
     script = ScriptDirectory.from_config(alembic_cfg)
     heads = script.get_heads()
     assert len(heads) == 1
-    assert heads[0] == "0004"
+    assert heads[0] == "0005"
 

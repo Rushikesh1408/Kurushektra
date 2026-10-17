@@ -5,6 +5,8 @@ import { Icon, DifficultyBadge, SimulatedDemoLabel } from '../../components/ui';
 import { mockChallenges } from '../../data/mockData';
 import { api } from '../../services/api';
 import { offlineSync } from '../../services/offlineSync';
+import { AIBrainDrawer } from '../../components/brain/AIBrainDrawer';
+import type { BrainFeature } from '../../services/brainApi';
 import type { BackendSubmission, BackendChallengeDetail } from '../../services/api';
 
 type WorkspaceTab = 'problem' | 'code' | 'output' | 'feedback';
@@ -58,6 +60,8 @@ export default function CodingWorkspacePage() {
   const [failureExplanation, setFailureExplanation] = useState<{ summary: string; suspected_cause: string; suggested_fix: string } | null>(null);
   const [explainingFailure, setExplainingFailure] = useState(false);
   const [draftSaved, setDraftSaved] = useState(false);
+  const [brainOpen, setBrainOpen] = useState(false);
+  const [brainFeature, setBrainFeature] = useState<BrainFeature>('tutor');
 
   // Execution result state from backend
   const [hasRun, setHasRun] = useState(false);
@@ -299,6 +303,18 @@ export default function CodingWorkspacePage() {
               <option value="java">Java</option>
             </select>
           </div>
+          <button
+            onClick={() => {
+              setBrainFeature('tutor');
+              setBrainOpen(true);
+            }}
+            className="btn btn-secondary btn-sm flex items-center gap-1.5 text-sky-400 border-sky-500/30 hover:border-sky-500/60 font-mono"
+            title="Open AI Brain & RAG Grounded Tutor"
+          >
+            <Icon name="psychology" size={16} />
+            <span>AI Brain</span>
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+          </button>
         </div>
       </div>
 
@@ -488,6 +504,17 @@ export default function CodingWorkspacePage() {
                   }`}
                 >
                   Console Output
+                </button>
+                <button
+                  onClick={() => {
+                    setBrainFeature(lastSubmission?.error_message || lastSubmission?.compile_error ? 'debugger' : 'tutor');
+                    setBrainOpen(true);
+                  }}
+                  className="px-2.5 py-1 text-label-xs font-mono uppercase tracking-wider rounded transition-colors flex items-center gap-1 text-purple-400 hover:text-purple-300 hover:bg-surface-container"
+                  title="Ask AI Brain for conceptual guidance or debugging"
+                >
+                  <Icon name="psychology" size={13} />
+                  <span>Ask Brain</span>
                 </button>
               </div>
 
@@ -685,6 +712,18 @@ export default function CodingWorkspacePage() {
           </div>
         </div>
       </div>
+
+      <AIBrainDrawer
+        isOpen={brainOpen}
+        onClose={() => setBrainOpen(false)}
+        challengeId={challenge.id}
+        challengeTitle={challenge.title}
+        language={language}
+        currentCode={code}
+        errorOutput={consoleLogs || lastSubmission?.compile_error || lastSubmission?.error_message || undefined}
+        submissionId={lastSubmission?.id}
+        initialFeature={brainFeature}
+      />
     </div>
   );
 }

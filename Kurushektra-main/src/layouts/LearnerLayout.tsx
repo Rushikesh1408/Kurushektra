@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Outlet, NavLink, Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/useAuth';
 import { Icon } from '../components/ui';
+import { AIBrainDrawer } from '../components/brain/AIBrainDrawer';
 
 const NAV_ITEMS = [
   { path: '/dashboard', icon: 'home', label: 'Home' },
@@ -15,6 +16,7 @@ export default function LearnerLayout() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const [profileOpen, setProfileOpen] = useState(false);
+  const [brainOpen, setBrainOpen] = useState(false);
 
   const handleLogout = () => { logout(); navigate('/'); };
 
@@ -88,6 +90,25 @@ export default function LearnerLayout() {
           </div>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <button
+            onClick={() => setBrainOpen(true)}
+            className="btn btn-secondary btn-sm"
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.375rem',
+              padding: '0.25rem 0.625rem',
+              fontSize: '0.75rem',
+              color: '#38bdf8',
+              borderColor: 'rgba(56, 189, 248, 0.3)',
+              fontFamily: 'monospace',
+            }}
+            title="Open AI Brain Assistant"
+          >
+            <Icon name="psychology" size={16} />
+            <span>AI Brain</span>
+            <span style={{ width: '0.375rem', height: '0.375rem', borderRadius: '50%', backgroundColor: '#34d399' }} />
+          </button>
           <button className="btn btn-ghost btn-icon" aria-label="Notifications">
             <Icon name="notifications" size={18} />
           </button>
@@ -157,6 +178,11 @@ export default function LearnerLayout() {
           </NavLink>
         ))}
       </nav>
+
+      <AIBrainDrawer
+        isOpen={brainOpen}
+        onClose={() => setBrainOpen(false)}
+      />
     </div>
   );
 }
