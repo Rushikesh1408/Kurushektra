@@ -1,4 +1,5 @@
 import pytest
+from app.models.base import Role
 from tests.conftest import login, make_user
 
 API = "/api/v1"
@@ -70,3 +71,81 @@ def test_offline_sync_unknown_action_type(client, db, student):
     res = r.json()["results"][0]
     assert res["status"] == "rejected"
     assert "Unsupported action_type" in res["message"]
+
+
+def test_offline_sync_mixed_batch_and_isolation(client, db, student):
+    """Mixed batch handles applied, duplicate, and rejected atomically; isolates across students."""
+    sh1 = login(client, "student@example.com")
+    make_user(db, "student2@example.com", Role.STUDENT)
+    sh2 = login(client, "student2@example.com")
+
+    # Seed 1 existing sync record for student 1
+    seed_payload = {
+        "actions": [
+            {
+                "idempotency_key": "sync-existing-key",
+                "action_type": "save_draft",
+                "payload": {"draft": "hello"},
+            }
+        ]
+    }
+    r_seed = client.post(f"{API}/sync/batch", headers=sh1, json=seed_payload)
+    assert r_seed.status_code == 200
+
+    # Mixed batch: 1 applied, 1 duplicate, 1 rejected
+    mixed_payload = {
+        "actions": [
+            {
+                "idempotency_key": "sync-new-key",
+                "action_type": "save_draft",
+                "payload": {"draft": "new content"},
+            },
+            {
+                "idempotency_key": "sync-existing-key",  # Duplicate
+                "action_type": "save_draft",
+                "payload": {"draft": "hello again"},
+            },
+            {
+                "idempotency_key": "sync-invalid-type",  # Rejected
+                "action_type": "invalid_type_xyz",
+                "payload": {},
+            },
+        ]
+    }
+    r_mixed = client.post(f"{API}/sync/batch", headers=sh1, json=mixed_payload)
+    assert r_mixed.status_code == 200
+    res_data = r_mixed.json()
+    assert res_data["synced_count"] == 1
+    statuses = [item["status"] for item in res_data["results"]]
+    assert statuses == ["applied", "duplicate", "rejected"]
+
+    # Cross-student isolation: Student 2 uses "sync-new-key" (previously used by Student 1)
+    s2_payload = {
+        "actions": [
+            {
+                "idempotency_key": "sync-new-key",
+                "action_type": "save_draft",
+                "payload": {"draft": "student 2 draft"},
+            }
+        ]
+    }
+    r_s2 = client.post(f"{API}/sync/batch", headers=sh2, json=s2_payload)
+    assert r_s2.status_code == 200
+    # Must be applied for student 2 because student 1's key doesn't block student 2!
+    assert r_s2.json()["results"][0]["status"] == "applied"
+    assert r_s2.json()["synced_count"] == 1
+
+
+def test_offline_sync_requires_authentication(client, db):
+    """Anonymous request to sync endpoint must return 401 Unauthorized."""
+    payload = {
+        "actions": [
+            {
+                "idempotency_key": "sync-anon-1",
+                "action_type": "save_draft",
+                "payload": {},
+            }
+        ]
+    }
+    r = client.post(f"{API}/sync/batch", json=payload)
+    assert r.status_code == 401

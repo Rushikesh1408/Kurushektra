@@ -417,6 +417,20 @@ export default function CodingWorkspacePage() {
               theme="vs-dark"
               value={code}
               onChange={(val) => handleCodeChange(val || '')}
+              onMount={(editor) => {
+                editor.onDidPaste((e) => {
+                  try {
+                    const pasteLen = editor.getModel()?.getValueInRange(e.range).length || 0;
+                    void api.learning.recordTelemetry({
+                      challenge_id: challenge.id,
+                      paste_events: 1,
+                      paste_length: pasteLen,
+                    });
+                  } catch {
+                    // Non-blocking telemetry
+                  }
+                });
+              }}
               options={{
                 minimap: { enabled: false },
                 fontSize: 13,
@@ -426,6 +440,9 @@ export default function CodingWorkspacePage() {
                 wordWrap: 'on',
                 tabSize: 4,
                 automaticLayout: true,
+                readOnly: false,
+                domReadOnly: false,
+                contextmenu: true,
                 padding: { top: 12, bottom: 12 },
               }}
             />
