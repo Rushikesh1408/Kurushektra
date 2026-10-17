@@ -10,49 +10,72 @@ export default function ForgotPasswordPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    await new Promise(r => setTimeout(r, 800));
+    await new Promise(r => setTimeout(r, 650));
     setSent(true);
     setLoading(false);
   };
 
   return (
-    <div style={{ minHeight: 'calc(100vh - 3rem)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '2rem 1rem' }}>
-      <div style={{ width: '100%', maxWidth: '22rem' }}>
-        <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
-          <Icon name="lock_reset" size={36} className="text-primary" />
-          <h1 className="text-headline-sm text-on-surface" style={{ marginTop: '0.75rem' }}>Password Recovery</h1>
-          <p className="text-body-md text-on-surface-variant">Enter your email to receive a reset link.</p>
+    <div className="flex-1 flex items-center justify-center p-4 sm:p-8 animate-fade-in">
+      <div className="w-full max-w-md space-y-6">
+        <div className="text-center space-y-2">
+          <div className="w-12 h-12 rounded-lg bg-[#1C2022] border border-[#343A40] flex items-center justify-center text-primary mx-auto shadow-md">
+            <Icon name="lock_reset" size={24} />
+          </div>
+          <h1 className="text-headline-md font-bold text-primary-text tracking-tight">
+            Account Recovery
+          </h1>
+          <p className="text-body-sm text-secondary-text">
+            Enter your registered email to receive verification credentials.
+          </p>
         </div>
-        <div className="card" style={{ padding: '1.5rem' }}>
+
+        <div className="card p-6 bg-[#1C2022] border-[#343A40] shadow-xl">
           {sent ? (
-            <div style={{ textAlign: 'center' }}>
-              <Icon name="mark_email_read" size={36} className="text-success" />
-              <h2 className="text-headline-sm text-on-surface" style={{ marginTop: '0.75rem' }}>Check your email</h2>
-              <p className="text-body-md text-on-surface-variant" style={{ marginTop: '0.5rem' }}>
-                If <strong>{email}</strong> is registered, you'll receive a reset link shortly.
-              </p>
-              <Link to="/login" className="btn btn-secondary" style={{ marginTop: '1rem', justifyContent: 'center', width: '100%' }}>
-                Back to Sign In
+            <div className="text-center space-y-4 py-2">
+              <div className="w-12 h-12 rounded-full bg-[#83D69A]/15 border border-[#83D69A]/30 flex items-center justify-center text-[#83D69A] mx-auto">
+                <Icon name="mark_email_read" size={24} />
+              </div>
+              <div className="space-y-1">
+                <h2 className="text-headline-sm font-bold text-primary-text">Recovery Link Dispatched</h2>
+                <p className="text-body-sm text-secondary-text">
+                  If an account exists for <strong className="text-primary-text font-mono">{email}</strong>, a reset token has been issued.
+                </p>
+              </div>
+              <Link to="/login" className="btn btn-secondary w-full py-2.5 font-mono text-label-sm uppercase justify-center mt-2">
+                Return to Sign In
               </Link>
             </div>
           ) : (
-            <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-              <div>
-                <label className="text-label-sm text-on-surface-variant" style={{ display: 'block', marginBottom: '0.375rem' }}>Email address</label>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="space-y-1.5">
+                <label className="text-label-xs font-mono text-secondary-text block">
+                  Email Address
+                </label>
                 <input
-                  className="input"
+                  className="input font-mono text-code-sm"
                   type="email"
                   value={email}
                   onChange={e => setEmail(e.target.value)}
-                  placeholder="you@example.com"
+                  placeholder="developer@congnicode.dev"
                   required
                 />
               </div>
-              <button className="btn btn-primary" type="submit" disabled={loading} style={{ justifyContent: 'center', width: '100%' }}>
-                {loading ? 'Sending...' : 'Send Reset Link'}
+
+              <button
+                type="submit"
+                disabled={loading}
+                className="btn btn-primary w-full py-2.5 font-mono text-label-sm uppercase tracking-wider justify-center shadow-lg shadow-primary/20"
+              >
+                {loading ? 'Issuing Link...' : 'Send Recovery Link'}
               </button>
-              <Link to="/login" className="btn btn-ghost" style={{ justifyContent: 'center' }}>
-                <Icon name="arrow_back" size={16} /> Back to Sign In
+
+              <Link
+                to="/login"
+                className="btn btn-ghost w-full py-2 font-mono text-label-xs uppercase justify-center text-secondary-text hover:text-primary-text"
+              >
+                <Icon name="arrow_back" size={14} />
+                <span>Back to Sign In</span>
               </Link>
             </form>
           )}
