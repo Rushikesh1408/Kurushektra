@@ -4,17 +4,22 @@ import { useAuth } from '../../contexts/useAuth';
 import { Icon, Spinner } from '../../components/ui';
 
 export default function SignUpPage() {
-  const { login } = useAuth();
+  const { register } = useAuth();
   const navigate = useNavigate();
   const [form, setForm] = useState({ name: '', email: '', password: '', confirm: '' });
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [serverError, setServerError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
   const validate = () => {
     const e: Record<string, string> = {};
     if (!form.name.trim()) e.name = 'Full name is required';
     if (!form.email.includes('@')) e.email = 'Valid email address required';
-    if (form.password.length < 6) e.password = 'Password must be at least 6 characters';
+    if (form.password.length < 10) {
+      e.password = 'Password must be at least 10 characters';
+    } else if (/^[a-zA-Z]+$/.test(form.password) || /^\d+$/.test(form.password)) {
+      e.password = 'Password must contain a mix of letters and numbers/symbols';
+    }
     if (form.password !== form.confirm) e.confirm = 'Passwords do not match';
     setErrors(e);
     return Object.keys(e).length === 0;
@@ -22,14 +27,14 @@ export default function SignUpPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setServerError(null);
     if (!validate()) return;
     setLoading(true);
     try {
-      await login(form.email, form.password, 'learner');
-      navigate('/onboarding');
-    } catch {
-      // In demo mode navigate to onboarding
-      navigate('/onboarding');
+      await register(form.email, form.name, form.password);
+      navigate('/dashboard');
+    } catch (err: any) {
+      setServerError(err?.message || 'Registration failed. Please check your details and try again.');
     } finally {
       setLoading(false);
     }
@@ -70,6 +75,12 @@ export default function SignUpPage() {
 
         {/* Form Card */}
         <div className="card p-6 bg-[#1C2022] border-[#343A40] shadow-xl space-y-5">
+          {serverError && (
+            <div className="p-3 rounded bg-[#E99AA4]/15 border border-[#E99AA4]/30 text-[#E99AA4] text-xs font-mono flex items-center gap-2">
+              <Icon name="error" size={16} />
+              <span>{serverError}</span>
+            </div>
+          )}
           <form onSubmit={handleSubmit} className="space-y-4">
             {field('name', 'Full Name', 'text', 'Alex Chen')}
             {field('email', 'Email Address', 'email', 'developer@congnicode.dev')}

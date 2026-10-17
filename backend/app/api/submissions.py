@@ -58,6 +58,17 @@ def submit_code(request: Request, challenge_id: str, body: SubmitIn, db: Session
     return _enqueue(db, user, ch, body.language, body.source_code, False)
 
 
+@router.get("/submissions", response_model=Page[SubmissionListItem])
+def list_user_submissions(page: int = Query(1, ge=1), page_size: int = Query(20, ge=1, le=100),
+                          db: Session = Depends(get_db), user: User = Depends(get_current_user)):
+    """Return paginated list of submissions for the authenticated user across challenges."""
+    where = (Submission.user_id == user.id, Submission.is_run_only.is_(False))
+    total = db.scalar(select(func.count(Submission.id)).where(*where)) or 0
+    rows = db.scalars(select(Submission).where(*where).order_by(Submission.created_at.desc())
+                      .offset((page - 1) * page_size).limit(page_size)).all()
+    return Page(items=[svc.list_item(db, s) for s in rows], total=total, page=page, page_size=page_size)
+
+
 @router.get("/challenges/{challenge_id}/submissions", response_model=Page[SubmissionListItem])
 def my_submissions(challenge_id: str, all_students: bool = Query(False), page: int = Query(1, ge=1), page_size: int = Query(20, ge=1, le=100),
                    db: Session = Depends(get_db), user: User = Depends(get_current_user)):

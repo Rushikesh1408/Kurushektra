@@ -84,7 +84,7 @@ export default function DashboardPage() {
             <Icon name="list" size={16} />
             <span>All Challenges</span>
           </Link>
-          <Link to="/workspace/c1" className="btn btn-primary text-xs font-mono">
+          <Link to="/workspace/two-sum" className="btn btn-primary text-xs font-mono">
             <Icon name="play_arrow" size={16} />
             <span>Resume Workspace</span>
           </Link>
@@ -148,10 +148,10 @@ export default function DashboardPage() {
             </span>
 
             <div className="flex items-center gap-2">
-              <Link to="/challenges/c1" className="btn btn-secondary text-xs font-mono">
+              <Link to="/challenges/two-sum" className="btn btn-secondary text-xs font-mono">
                 Challenge Details
               </Link>
-              <Link to="/workspace/c1" className="btn btn-primary text-xs font-mono flex items-center gap-1">
+              <Link to="/workspace/two-sum" className="btn btn-primary text-xs font-mono flex items-center gap-1">
                 <span>Resume Coding</span>
                 <Icon name="arrow_forward" size={14} />
               </Link>

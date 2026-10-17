@@ -173,6 +173,11 @@ export const api = {
 
   // Auth endpoints
   auth: {
+    register: (email: string, full_name: string, password: string) =>
+      request<BackendLoginResponse>('/auth/register', {
+        method: 'POST',
+        body: JSON.stringify({ email, full_name, password }),
+      }),
     login: (email: string, password: string) =>
       request<BackendLoginResponse>('/auth/login', {
         method: 'POST',
@@ -192,6 +197,8 @@ export const api = {
 
   // Execution & Submissions endpoints
   submissions: {
+    list: (page: number = 1, pageSize: number = 20) =>
+      request<{ items: Array<BackendSubmission & { challenge_title?: string; challenge_slug?: string }>; total: number }>(`/submissions?page=${page}&page_size=${pageSize}`),
     run: (challengeId: string, payload: { language: string; source_code: string; custom_input?: string }) =>
       request<BackendSubmission>(`/challenges/${challengeId}/run`, {
         method: 'POST',
