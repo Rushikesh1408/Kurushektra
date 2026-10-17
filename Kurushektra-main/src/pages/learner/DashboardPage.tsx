@@ -20,15 +20,21 @@ export default function DashboardPage() {
         ]);
 
         if (mounted && mRes.status === 'fulfilled' && mRes.value.length > 0) {
-          const mapped = mRes.value.map(bm => ({
-            concept: bm.name,
-            level: bm.status as any,
-            percentage: Math.round(bm.mastery_score * 100),
-            confidence: bm.confidence > 0.7 ? ('high' as const) : bm.confidence > 0.4 ? ('medium' as const) : ('low' as const),
-            testsCompleted: bm.total_attempts,
-            testsTotal: Math.max(5, bm.total_attempts + 2),
-            lastAssessed: new Date().toISOString(),
-          }));
+          const mapped = mRes.value.map(bm => {
+            const level =
+              bm.status === 'mastered' ? 'mastered' :
+              bm.status === 'in_progress' ? 'developing' :
+              bm.status === 'struggling' ? 'struggling' : 'developing';
+            return {
+              concept: bm.name,
+              level: level as any,
+              percentage: Math.round(bm.mastery_score * 100),
+              confidence: bm.confidence > 0.7 ? ('high' as const) : bm.confidence > 0.4 ? ('medium' as const) : ('low' as const),
+              testsCompleted: bm.total_attempts,
+              testsTotal: Math.max(5, bm.total_attempts + 2),
+              lastAssessed: new Date().toISOString(),
+            };
+          });
           setMasteryData(mapped);
         }
 
@@ -65,7 +71,7 @@ export default function DashboardPage() {
             <span className="text-code-sm text-outline">· engine: v2.4-sandbox</span>
           </div>
           <h1 className="text-headline-lg text-primary" style={{ marginBottom: '0.25rem' }}>
-            Welcome back, {user?.name?.split(' ')[0]}. Ready to verify your code logic?
+            Welcome back, {user?.name ? user.name.split(' ')[0] : 'Learner'}. Ready to verify your code logic?
           </h1>
           <p className="text-body-md text-on-surface-variant">
             Your verification queue has 1 in-flight diagnostic and 2 high-priority edge case reviews pending.

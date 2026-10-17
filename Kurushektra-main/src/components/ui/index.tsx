@@ -18,20 +18,19 @@ export function Icon({ name, size = 18, className = '' }: IconProps) {
 }
 
 // ── Difficulty Badge ──────────────────────────────────────────────────────
-export function DifficultyBadge({ difficulty }: { difficulty: Difficulty }) {
-  const map: Record<Difficulty, string> = {
-    easy: 'difficulty-easy', medium: 'difficulty-medium', hard: 'difficulty-hard',
-  };
+export function DifficultyBadge({ difficulty }: { difficulty?: Difficulty | string | null }) {
+  const diff = (difficulty || 'easy').toLowerCase();
+  const cls = diff === 'hard' ? 'difficulty-hard' : diff === 'medium' ? 'difficulty-medium' : 'difficulty-easy';
   return (
-    <span className={`text-label-sm font-semibold capitalize ${map[difficulty]}`}>
-      {difficulty}
+    <span className={`text-label-sm font-semibold capitalize ${cls}`}>
+      {diff}
     </span>
   );
 }
 
 // ── Status Badge ──────────────────────────────────────────────────────────
-export function StatusBadge({ status }: { status: SubmissionStatus }) {
-  const cfg: Record<SubmissionStatus, { cls: string; label: string }> = {
+export function StatusBadge({ status }: { status?: SubmissionStatus | string | null }) {
+  const cfg: Record<string, { cls: string; label: string }> = {
     accepted:           { cls: 'badge-success',  label: 'Accepted' },
     wrong_answer:       { cls: 'badge-error',    label: 'Wrong Answer' },
     partial_pass:       { cls: 'badge-warning',  label: 'Partial Pass' },
@@ -39,24 +38,32 @@ export function StatusBadge({ status }: { status: SubmissionStatus }) {
     runtime_error:      { cls: 'badge-error',    label: 'Runtime Error' },
     timeout:            { cls: 'badge-warning',  label: 'Time Limit Exceeded' },
     pending:            { cls: 'badge-neutral',  label: 'Pending' },
+    queued:             { cls: 'badge-neutral',  label: 'Queued' },
+    running:            { cls: 'badge-info',     label: 'Running' },
+    completed:          { cls: 'badge-success',  label: 'Completed' },
+    failed:             { cls: 'badge-error',    label: 'Failed' },
     service_unavailable:{ cls: 'badge-neutral',  label: 'Service Unavailable' },
     live_execution:     { cls: 'badge-info',     label: 'Live Execution' },
     simulated_demo:     { cls: 'badge-warning',  label: 'Simulated Demo' },
   };
-  const { cls, label } = cfg[status];
-  return <span className={`badge ${cls}`}>{label}</span>;
+  const key = (status || 'pending').toLowerCase();
+  const item = cfg[key] || { cls: 'badge-neutral', label: key.replace(/_/g, ' ') };
+  return <span className={`badge ${item.cls}`}>{item.label}</span>;
 }
 
 // ── Mastery Badge ─────────────────────────────────────────────────────────
-export function MasteryBadge({ level }: { level: MasteryLevel }) {
-  const cfg: Record<MasteryLevel, { cls: string; label: string }> = {
+export function MasteryBadge({ level }: { level?: MasteryLevel | string | null }) {
+  const cfg: Record<string, { cls: string; label: string }> = {
     not_started:  { cls: 'badge-neutral', label: 'Not Started' },
-    developing:   { cls: 'badge-neutral', label: 'Developing' },
+    struggling:   { cls: 'badge-error',   label: 'Struggling' },
+    developing:   { cls: 'badge-warning', label: 'Developing' },
+    in_progress:  { cls: 'badge-warning', label: 'In Progress' },
     demonstrated: { cls: 'badge-info',    label: 'Demonstrated' },
     mastered:     { cls: 'badge-success', label: 'Mastered' },
   };
-  const { cls, label } = cfg[level];
-  return <span className={`badge ${cls}`}>{label}</span>;
+  const key = (level || 'developing').toLowerCase();
+  const item = cfg[key] || { cls: 'badge-neutral', label: key.replace(/_/g, ' ') };
+  return <span className={`badge ${item.cls}`}>{item.label}</span>;
 }
 
 // ── Simulated Demo Label ──────────────────────────────────────────────────
