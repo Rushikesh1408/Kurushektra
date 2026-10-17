@@ -12,10 +12,15 @@ COGNICODE provides a containerized multi-service environment via `compose.yaml`.
 ### Services Included
 - **Frontend**: Nginx serving compiled React/Vite assets on port `8080`
 - **Backend API**: FastAPI application on port `8000`
-- **Worker**: Background queue processor running `python -m app.worker`
+- **Worker**: Background queue processor running `python -m app.worker` with `JUDGE0_ENABLE_PER_PROCESS_LIMITS=true`
 - **PostgreSQL 16**: Relational storage on port `5432`
 - **Redis 7**: Cache and session broker on port `6379`
-- **Judge0 v1.13**: Isolated code execution engine on internal port `2358`
+- **Judge0 v1.13.1**: Isolated code execution engine on internal port `2358` (paired with `sandbox-db` and `sandbox-redis`)
+
+### Host Requirements for Sandboxed Code Execution
+- Docker Desktop or Linux Docker Engine running on kernel 5.10+.
+- For cgroup v2 hosts (standard on modern Linux and WSL2), ensure `JUDGE0_ENABLE_PER_PROCESS_LIMITS=true` is set. This enables namespace and chroot sandboxing using POSIX limits without requiring legacy cgroup v1 mounts.
+- For cgroup v1 hosts, `JUDGE0_ENABLE_PER_PROCESS_LIMITS=false` may be configured to use kernel cgroup accounting directly.
 
 ### Launch Instructions
 ```bash

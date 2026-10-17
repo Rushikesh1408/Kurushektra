@@ -44,6 +44,7 @@ services:
       COOKIE_SECURE: ${COOKIE_SECURE:-false}
       CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost,http://localhost:5173,http://localhost:8080}
       JUDGE0_URL: http://sandbox:2358
+      JUDGE0_ENABLE_PER_PROCESS_LIMITS: ${JUDGE0_ENABLE_PER_PROCESS_LIMITS:-true}
       DEMO_MODE: ${DEMO_MODE:-false}
       LLM_PROVIDER: ${LLM_PROVIDER:-none}
     networks:
@@ -68,6 +69,7 @@ services:
       DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-cognicode}:${POSTGRES_PASSWORD:-change_in_production_password}@postgres:5432/${POSTGRES_DB:-cognicode}
       JWT_SECRET: ${JWT_SECRET:-insecure-development-secret-change-in-production-min32chars}
       JUDGE0_URL: http://sandbox:2358
+      JUDGE0_ENABLE_PER_PROCESS_LIMITS: ${JUDGE0_ENABLE_PER_PROCESS_LIMITS:-true}
       DEMO_MODE: ${DEMO_MODE:-false}
     healthcheck:
       disable: true
