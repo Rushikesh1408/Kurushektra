@@ -1,0 +1,152 @@
+services:
+  # ── Relational Database ──────────────────────────────────────────────────────
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-cognicode}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change_in_production_password}
+      POSTGRES_DB: ${POSTGRES_DB:-cognicode}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - backend_net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-cognicode} -d ${POSTGRES_DB:-cognicode}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ── Cache & Session Broker ──────────────────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes", "--requirepass", "${REDIS_PASSWORD:-redis_local_secure_pass}"]
+    volumes:
+      - redis_data:/data
+    networks:
+      - backend_net
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD:-redis_local_secure_pass}", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ── Backend API Service ──────────────────────────────────────────────────────
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-cognicode}:${POSTGRES_PASSWORD:-change_in_production_password}@postgres:5432/${POSTGRES_DB:-cognicode}
+      JWT_SECRET: ${JWT_SECRET:-insecure-development-secret-change-in-production-min32chars}
+      COOKIE_SECURE: ${COOKIE_SECURE:-false}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost,http://localhost:5173,http://localhost:8080}
+      JUDGE0_URL: http://sandbox:2358
+      JUDGE0_ENABLE_PER_PROCESS_LIMITS: ${JUDGE0_ENABLE_PER_PROCESS_LIMITS:-true}
+      DEMO_MODE: ${DEMO_MODE:-false}
+      LLM_PROVIDER: ${LLM_PROVIDER:-none}
+    networks:
+      - backend_net
+      - frontend_net
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    ports:
+      - "8000:8000"
+
+  # ── Submission Execution Worker ─────────────────────────────────────────────
+  worker:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    command: ["python", "-m", "app.worker"]
+    environment:
+      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-cognicode}:${POSTGRES_PASSWORD:-change_in_production_password}@postgres:5432/${POSTGRES_DB:-cognicode}
+      JWT_SECRET: ${JWT_SECRET:-insecure-development-secret-change-in-production-min32chars}
+      JUDGE0_URL: http://sandbox:2358
+      JUDGE0_ENABLE_PER_PROCESS_LIMITS: ${JUDGE0_ENABLE_PER_PROCESS_LIMITS:-true}
+      DEMO_MODE: ${DEMO_MODE:-false}
+    healthcheck:
+      disable: true
+    networks:
+      - backend_net
+      - sandbox_net
+    depends_on:
+      postgres:
+        condition: service_healthy
+      sandbox:
+        condition: service_started
+
+  # ── Frontend Web Server ─────────────────────────────────────────────────────
+  frontend:
+    build:
+      context: ./Kurushektra-main
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports:
+      - "8080:80"
+    networks:
+      - frontend_net
+    depends_on:
+      - backend
+
+  # ── Production Code Execution Sandbox (Judge0) ──────────────────────────────
+  sandbox:
+    image: judge0/judge0:1.13.1
+    restart: unless-stopped
+    privileged: true
+    environment:
+      REDIS_HOST: sandbox-redis
+      REDIS_PORT: 6379
+      POSTGRES_HOST: sandbox-db
+      POSTGRES_PORT: 5432
+      POSTGRES_USER: judge0
+      POSTGRES_PASSWORD: judge0_password
+      POSTGRES_DB: judge0
+      MAX_CPU_TIME_LIMIT: 5.0
+      MAX_WALL_TIME_LIMIT: 10.0
+      MAX_MEMORY_LIMIT: 262144 # 256 MB
+      MAX_MAX_FILE_SIZE: 1024 # 1 MB
+      MAX_NUMBER_OF_RUNS: 1
+    networks:
+      - sandbox_net
+    depends_on:
+      - sandbox-db
+      - sandbox-redis
+
+  sandbox-db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: judge0
+      POSTGRES_PASSWORD: judge0_password
+      POSTGRES_DB: judge0
+    volumes:
+      - judge0_db_data:/var/lib/postgresql/data
+    networks:
+      - sandbox_net
+
+  sandbox-redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    networks:
+      - sandbox_net
+
+volumes:
+  postgres_data:
+  redis_data:
+  judge0_db_data:
+
+networks:
+  frontend_net:
+    driver: bridge
+  backend_net:
+    driver: bridge
+  sandbox_net:
+    driver: bridge
+    internal: true # No external internet access for untrusted code execution

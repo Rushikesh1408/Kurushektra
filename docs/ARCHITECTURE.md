@@ -162,3 +162,22 @@ flowchart TD
 4. **Resilient Fallback**: If LLM providers are unavailable or return malformed JSON, deterministic fallbacks ensure student progression is never blocked.
 5. **Idempotent Background Jobs & Safe Offline Sync**: Submissions and sync batches use idempotency keys to prevent duplicate execution or state corruption.
 
+---
+
+## Containerization & Kubernetes Orchestration Topology
+
+### Multi-Container Topology (`compose.yaml`)
+- **Frontend**: Nginx 1.27 serving compiled React/Vite assets, proxying `/api` to backend.
+- **Backend**: FastAPI API Gateway with correlation ID tracking (`X-Request-ID`) and `Server-Timing`.
+- **Worker**: Asynchronous execution queue processor with graceful 60s termination draining.
+- **PostgreSQL 16**: Normalized relational database with connection pooling and range partitioning.
+- **Redis 7**: Cache, rate limiting, and session state.
+- **Judge0 v1.13**: Isolated code sandbox with cgroup v2 limits on a zero-egress internal network.
+
+### Cloud Native Kubernetes Manifests (`k8s/`)
+- **Ingress**: TLS termination, rate-limiting annotations (25 rps / 50 conns), and routing to frontend and API services.
+- **Autoscaling (HPA)**: Backend API autoscaling (2..10 replicas) and Frontend autoscaling (2..8 replicas) based on CPU and memory thresholds.
+- **Network Policies**: Pod-level firewalling ensuring zero-trust traffic flow between frontend, backend, database, and isolated code sandbox pods.
+- **Probes**: Separate lightweight liveness (`/api/v1/health/live`) and readiness (`/api/v1/health/ready`) probes protecting against thundering herd restarts.
+
+

@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: cognicode
+  labels:
+    app.kubernetes.io/name: cognicode
+    app.kubernetes.io/part-of: cognicode-platform

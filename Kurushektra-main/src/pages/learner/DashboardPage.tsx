@@ -20,15 +20,21 @@ export default function DashboardPage() {
         ]);
 
         if (mounted && mRes.status === 'fulfilled' && mRes.value.length > 0) {
-          const mapped = mRes.value.map(bm => ({
-            concept: bm.name,
-            level: bm.status as any,
-            percentage: Math.round(bm.mastery_score * 100),
-            confidence: bm.confidence > 0.7 ? ('high' as const) : bm.confidence > 0.4 ? ('medium' as const) : ('low' as const),
-            testsCompleted: bm.total_attempts,
-            testsTotal: Math.max(5, bm.total_attempts + 2),
-            lastAssessed: new Date().toISOString(),
-          }));
+          const mapped = mRes.value.map(bm => {
+            const level =
+              bm.status === 'mastered' ? 'mastered' :
+              bm.status === 'in_progress' ? 'developing' :
+              bm.status === 'struggling' ? 'struggling' : 'developing';
+            return {
+              concept: bm.name,
+              level: level as any,
+              percentage: Math.round(bm.mastery_score * 100),
+              confidence: bm.confidence > 0.7 ? ('high' as const) : bm.confidence > 0.4 ? ('medium' as const) : ('low' as const),
+              testsCompleted: bm.total_attempts,
+              testsTotal: Math.max(5, bm.total_attempts + 2),
+              lastAssessed: new Date().toISOString(),
+            };
+          });
           setMasteryData(mapped);
         }
 
@@ -66,7 +72,7 @@ export default function DashboardPage() {
             <span className="text-xs font-mono text-[#60E3D0] uppercase font-semibold">Active Learning Journey</span>
           </div>
           <h1 className="text-2xl sm:text-3xl font-bold text-[#F2F3F5] tracking-tight">
-            Welcome back, {user?.name?.split(' ')[0] || 'Learner'}!
+            Welcome back, {user?.name ? user.name.split(' ')[0] : 'Learner'}!
           </h1>
           <p className="text-sm text-[#B7BEC5] max-w-2xl leading-relaxed">
             You're making steady progress. Continue with your active challenge or focus on your recommended practice task to solidify key algorithmic concepts.

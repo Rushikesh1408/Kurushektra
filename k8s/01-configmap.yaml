@@ -1,0 +1,20 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cognicode-config
+  namespace: cognicode
+  labels:
+    app.kubernetes.io/name: cognicode
+data:
+  ACCESS_TOKEN_MINUTES: "15"
+  REFRESH_TOKEN_DAYS: "7"
+  LOGIN_RATE_LIMIT: "10/minute"
+  CORS_ORIGINS: "https://cognicode.io,https://app.cognicode.io"
+  COOKIE_SECURE: "true"
+  JUDGE0_URL: "http://cognicode-sandbox.cognicode.svc.cluster.local:2358"
+  JUDGE0_ENABLE_PER_PROCESS_LIMITS: "true"
+  DEMO_MODE: "false"
+  LLM_PROVIDER: "openai"
+  LLM_MODEL: "gpt-4o-mini"
+  LLM_BASE_URL: "https://api.openai.com/v1"
+  LLM_TIMEOUT_SECONDS: "15"

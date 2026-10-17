@@ -54,17 +54,20 @@ def _unb64(s: str | None) -> str:
 
 
 class Judge0Executor:
-    def __init__(self, base_url: str, auth_token: str, client: httpx.Client | None = None):
+    def __init__(self, base_url: str, auth_token: str, client: httpx.Client | None = None,
+                 enable_per_process_limits: bool = True):
         self.base_url = base_url.rstrip("/")
         self.auth_token = auth_token
         self.client = client or httpx.Client()
+        self.enable_per_process_limits = enable_per_process_limits
 
     @classmethod
     def from_settings(cls) -> "Judge0Executor":
         s = get_settings()
         if not s.judge0_url:
             raise ExecutorUnavailable("JUDGE0_URL is not configured.")
-        return cls(s.judge0_url, s.judge0_auth_token)
+        return cls(s.judge0_url, s.judge0_auth_token,
+                   enable_per_process_limits=s.judge0_enable_per_process_limits)
 
     def run(self, *, source: str, judge0_language_id: int | None, stdin: str,
             time_limit_ms: int, memory_limit_kb: int) -> RunResult:
@@ -74,6 +77,8 @@ class Judge0Executor:
         payload = {
             "source_code": _b64(source), "language_id": judge0_language_id, "stdin": _b64(stdin),
             "cpu_time_limit": cpu, "wall_time_limit": cpu * 2 + 1, "memory_limit": memory_limit_kb,
+            "enable_per_process_and_thread_time_limit": self.enable_per_process_limits,
+            "enable_per_process_and_thread_memory_limit": self.enable_per_process_limits,
         }
         headers = {"X-Auth-Token": self.auth_token} if self.auth_token else {}
         try:

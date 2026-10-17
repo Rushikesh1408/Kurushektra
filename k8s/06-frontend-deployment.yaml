@@ -1,0 +1,76 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cognicode-frontend
+  namespace: cognicode
+  labels:
+    app: cognicode-frontend
+    app.kubernetes.io/component: web
+spec:
+  replicas: 2
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      app: cognicode-frontend
+  template:
+    metadata:
+      labels:
+        app: cognicode-frontend
+    spec:
+      containers:
+        - name: web
+          image: cognicode-frontend:1.0.0
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 80
+              name: http
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 256Mi
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 80
+            periodSeconds: 20
+            timeoutSeconds: 3
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 80
+            periodSeconds: 10
+            timeoutSeconds: 3
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: cognicode-frontend
+  namespace: cognicode
+  labels:
+    app: cognicode-frontend
+spec:
+  type: ClusterIP
+  ports:
+    - port: 80
+      targetPort: 80
+      name: http
+  selector:
+    app: cognicode-frontend
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: cognicode-frontend-pdb
+  namespace: cognicode
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: cognicode-frontend

@@ -9,9 +9,10 @@ interface AppHeaderProps {
   onOpenMobileMenu: () => void;
   isExplorerOpen: boolean;
   onToggleExplorer: () => void;
+  onOpenBrain?: () => void;
 }
 
-export function AppHeader({ role, onOpenMobileMenu, isExplorerOpen, onToggleExplorer }: AppHeaderProps) {
+export function AppHeader({ role, onOpenMobileMenu, isExplorerOpen, onToggleExplorer, onOpenBrain }: AppHeaderProps) {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
@@ -95,6 +96,19 @@ export function AppHeader({ role, onOpenMobileMenu, isExplorerOpen, onToggleExpl
 
       {/* Right side: Telemetry badge, Role & User Avatar */}
       <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+        {/* AI Brain Button */}
+        {onOpenBrain && (
+          <button
+            onClick={onOpenBrain}
+            className="btn btn-secondary text-xs font-mono py-1 px-2.5 flex items-center gap-1.5 text-[#60E3D0] border-[#60E3D0]/30 hover:border-[#60E3D0]"
+            title="Open AI Brain Assistant"
+          >
+            <Icon name="psychology" size={15} />
+            <span className="hidden sm:inline">AI Brain</span>
+            <span className="w-1.5 h-1.5 rounded-full bg-[#83D69A] animate-pulse" />
+          </button>
+        )}
+
         {/* Telemetry live status */}
         <div className="hidden xl:flex items-center gap-1.5 px-2 py-0.5 rounded bg-[#111315] border border-[#343A40] text-xs font-mono text-[#B7BEC5]">
           <span className="w-1.5 h-1.5 rounded-full bg-[#60E3D0] animate-pulse" />

@@ -1,17 +1,9 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import type { User, UserRole } from '../types';
 import { api, ApiError } from '../services/api';
 import type { BackendUser } from '../services/api';
-
-interface AuthContextValue {
-  user: User | null;
-  isAuthenticated: boolean;
-  login: (email: string, password?: string, preferredRole?: UserRole) => Promise<User>;
-  logout: () => Promise<void>;
-  loading: boolean;
-}
-
-const AuthContext = createContext<AuthContextValue | null>(null);
+import { AuthContext } from './authContextDef';
+export { useAuth } from './useAuth';
 
 function mapBackendUser(bUser: BackendUser): User {
   const role: UserRole = bUser.role === 'teacher' ? 'teacher' : bUser.role === 'admin' ? 'admin' : 'learner';
@@ -95,10 +87,4 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       {children}
     </AuthContext.Provider>
   );
-}
-
-export function useAuth() {
-  const ctx = useContext(AuthContext);
-  if (!ctx) throw new Error('useAuth must be used within AuthProvider');
-  return ctx;
 }

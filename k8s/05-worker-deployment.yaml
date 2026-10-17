@@ -1,0 +1,45 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cognicode-worker
+  namespace: cognicode
+  labels:
+    app: cognicode-worker
+    app.kubernetes.io/component: worker
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: cognicode-worker
+  template:
+    metadata:
+      labels:
+        app: cognicode-worker
+    spec:
+      terminationGracePeriodSeconds: 60 # Allow in-flight jobs to complete or safely requeue
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+      containers:
+        - name: worker
+          image: cognicode-backend:1.0.0
+          imagePullPolicy: IfNotPresent
+          command: ["python", "-m", "app.worker"]
+          envFrom:
+            - configMapRef:
+                name: cognicode-config
+            - secretRef:
+                name: cognicode-secrets
+          resources:
+            requests:
+              cpu: 250m
+              memory: 256Mi
+            limits:
+              cpu: 1000m
+              memory: 512Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL

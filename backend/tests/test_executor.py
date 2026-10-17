@@ -40,7 +40,23 @@ def test_request_shape_auth_header_and_limits():
     b = seen["body"]
     assert base64.b64decode(b["source_code"]) == b"print(1)" and base64.b64decode(b["stdin"]) == b"x"
     assert b["cpu_time_limit"] == 2.0 and b["memory_limit"] == 128000 and b["language_id"] == 71
+    assert b["enable_per_process_and_thread_time_limit"] is True
+    assert b["enable_per_process_and_thread_memory_limit"] is True
     assert (r.outcome, r.stdout, r.time_ms, r.memory_kb) == (Outcome.OK, "hi\n", 12, 3100)
+
+
+def test_enable_per_process_limits_toggle():
+    seen = {}
+
+    def handler(req: httpx.Request):
+        seen["body"] = json.loads(req.content)
+        return httpx.Response(200, json={"status": {"id": 3}, "stdout": b64("hi\n"), "time": "0.012", "memory": 3100})
+
+    ex = Judge0Executor("http://sandbox:2358/", "tok-123", httpx.Client(transport=httpx.MockTransport(handler)),
+                        enable_per_process_limits=False)
+    call(ex)
+    assert seen["body"]["enable_per_process_and_thread_time_limit"] is False
+    assert seen["body"]["enable_per_process_and_thread_memory_limit"] is False
 
 
 @pytest.mark.parametrize("status_id,outcome", [(5, Outcome.TIMEOUT), (11, Outcome.RUNTIME_ERROR), (8, Outcome.OUTPUT_LIMIT)])

@@ -5,6 +5,7 @@ import { WorkspaceExplorer } from './WorkspaceExplorer';
 import { AppHeader } from './AppHeader';
 import { MobileDrawer } from './MobileDrawer';
 import { MobileBottomNav } from './MobileBottomNav';
+import { AIBrainDrawer } from '../brain/AIBrainDrawer';
 import type { UserRole } from '../../types';
 
 interface AppShellProps {
@@ -19,6 +20,7 @@ export function AppShell({ role }: AppShellProps) {
     return true;
   });
   const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
+  const [isBrainOpen, setIsBrainOpen] = useState(false);
   const location = useLocation();
 
   // Close mobile drawer when route changes if it was open
@@ -50,6 +52,7 @@ export function AppShell({ role }: AppShellProps) {
           isExplorerOpen={isExplorerOpen}
           onToggleExplorer={() => setIsExplorerOpen(prev => !prev)}
           onOpenMobileMenu={() => setIsMobileDrawerOpen(true)}
+          onOpenBrain={() => setIsBrainOpen(true)}
         />
 
         {/* Main Content Area */}
@@ -73,6 +76,12 @@ export function AppShell({ role }: AppShellProps) {
 
       {/* Mobile Bottom Navigation (< 768px) */}
       <MobileBottomNav role={role} />
+
+      {/* Global AI Brain Assistant Drawer */}
+      <AIBrainDrawer
+        isOpen={isBrainOpen}
+        onClose={() => setIsBrainOpen(false)}
+      />
     </div>
   );
 }

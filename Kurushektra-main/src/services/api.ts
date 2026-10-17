@@ -305,6 +305,23 @@ export const api = {
         body: JSON.stringify(payload),
       }),
   },
+
+  // Central AI Brain & RAG Chat
+  brain: {
+    chat: (payload: import('./brainApi').BrainChatRequest) =>
+      request<import('./brainApi').BrainChatResponse>('/brain/chat', {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      }),
+    listConversations: (limit: number = 20) =>
+      request<import('./brainApi').BrainConversationSummary[]>(`/brain/conversations?limit=${limit}`),
+    getConversation: (conversationId: string) =>
+      request<import('./brainApi').BrainConversationDetail>(`/brain/conversations/${conversationId}`),
+    deleteConversation: (conversationId: string) =>
+      request<{ status: string; id: string }>(`/brain/conversations/${conversationId}`, {
+        method: 'DELETE',
+      }),
+  },
 };
 
 export default api;

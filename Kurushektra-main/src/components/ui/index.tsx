@@ -24,13 +24,14 @@ export function Icon({ name, size = 18, className = '', style }: IconProps) {
 }
 
 // ── Difficulty Badge ──────────────────────────────────────────────────────
-export function DifficultyBadge({ difficulty }: { difficulty: Difficulty }) {
-  const map: Record<Difficulty, { cls: string; dot: string; label: string }> = {
+export function DifficultyBadge({ difficulty }: { difficulty?: Difficulty | string | null }) {
+  const diff = (difficulty || 'easy').toLowerCase();
+  const map: Record<string, { cls: string; dot: string; label: string }> = {
     easy:   { cls: 'badge-success', dot: 'bg-[#83D69A]', label: 'Easy' },
     medium: { cls: 'badge-warning', dot: 'bg-[#F2B866]', label: 'Medium' },
     hard:   { cls: 'badge-error',   dot: 'bg-[#E99AA4]', label: 'Hard' },
   };
-  const item = map[difficulty] || map.medium;
+  const item = map[diff] || map.easy;
   return (
     <span className={`badge ${item.cls}`}>
       <span className={`w-1.5 h-1.5 rounded-full ${item.dot}`} />
@@ -40,8 +41,8 @@ export function DifficultyBadge({ difficulty }: { difficulty: Difficulty }) {
 }
 
 // ── Status Badge ──────────────────────────────────────────────────────────
-export function StatusBadge({ status }: { status: SubmissionStatus }) {
-  const cfg: Record<SubmissionStatus, { cls: string; label: string; dot: string }> = {
+export function StatusBadge({ status }: { status?: SubmissionStatus | string | null }) {
+  const cfg: Record<string, { cls: string; label: string; dot: string }> = {
     accepted:           { cls: 'badge-success',  label: 'Accepted',             dot: 'bg-[#83D69A]' },
     wrong_answer:       { cls: 'badge-error',    label: 'Wrong Answer',         dot: 'bg-[#E99AA4]' },
     partial_pass:       { cls: 'badge-warning',  label: 'Partial Pass',         dot: 'bg-[#F2B866]' },
@@ -49,11 +50,16 @@ export function StatusBadge({ status }: { status: SubmissionStatus }) {
     runtime_error:      { cls: 'badge-error',    label: 'Runtime Error',        dot: 'bg-[#E99AA4]' },
     timeout:            { cls: 'badge-warning',  label: 'Time Limit Exceeded',  dot: 'bg-[#F2B866]' },
     pending:            { cls: 'badge-neutral',  label: 'Pending',              dot: 'bg-[#56606A]' },
+    queued:             { cls: 'badge-neutral',  label: 'Queued',               dot: 'bg-[#56606A]' },
+    running:            { cls: 'badge-info',     label: 'Running',              dot: 'bg-[#8FAFF5]' },
+    completed:          { cls: 'badge-success',  label: 'Completed',            dot: 'bg-[#83D69A]' },
+    failed:             { cls: 'badge-error',    label: 'Failed',               dot: 'bg-[#E99AA4]' },
     service_unavailable:{ cls: 'badge-neutral',  label: 'Service Unavailable',  dot: 'bg-[#56606A]' },
     live_execution:     { cls: 'badge-primary',  label: 'Live Execution',       dot: 'bg-[#60E3D0]' },
     simulated_demo:     { cls: 'badge-warning',  label: 'Simulated Demo',       dot: 'bg-[#F2B866]' },
   };
-  const item = cfg[status] || cfg.pending;
+  const key = (status || 'pending').toLowerCase();
+  const item = cfg[key] || { cls: 'badge-neutral', label: key.replace(/_/g, ' '), dot: 'bg-[#56606A]' };
   return (
     <span className={`badge ${item.cls}`}>
       <span className={`w-1.5 h-1.5 rounded-full ${item.dot}`} />
@@ -63,14 +69,17 @@ export function StatusBadge({ status }: { status: SubmissionStatus }) {
 }
 
 // ── Mastery Badge ─────────────────────────────────────────────────────────
-export function MasteryBadge({ level }: { level: MasteryLevel }) {
-  const cfg: Record<MasteryLevel, { cls: string; label: string; dot: string }> = {
+export function MasteryBadge({ level }: { level?: MasteryLevel | string | null }) {
+  const cfg: Record<string, { cls: string; label: string; dot: string }> = {
     not_started:  { cls: 'badge-neutral', label: 'Not Started',  dot: 'bg-[#56606A]' },
+    struggling:   { cls: 'badge-error',   label: 'Struggling',   dot: 'bg-[#E99AA4]' },
     developing:   { cls: 'badge-neutral', label: 'Developing',   dot: 'bg-[#8FAFF5]' },
+    in_progress:  { cls: 'badge-warning', label: 'In Progress',  dot: 'bg-[#F2B866]' },
     demonstrated: { cls: 'badge-info',    label: 'Demonstrated', dot: 'bg-[#8FAFF5]' },
     mastered:     { cls: 'badge-success', label: 'Mastered',     dot: 'bg-[#83D69A]' },
   };
-  const item = cfg[level] || cfg.not_started;
+  const key = (level || 'developing').toLowerCase();
+  const item = cfg[key] || { cls: 'badge-neutral', label: key.replace(/_/g, ' '), dot: 'bg-[#56606A]' };
   return (
     <span className={`badge ${item.cls}`}>
       <span className={`w-1.5 h-1.5 rounded-full ${item.dot}`} />

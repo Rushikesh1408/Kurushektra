@@ -1,0 +1,18 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: cognicode
+
+resources:
+  - 00-namespace.yaml
+  - 01-configmap.yaml
+  - 02-secrets.template.yaml
+  - 03-network-policy.yaml
+  - 04-backend-deployment.yaml
+  - 05-worker-deployment.yaml
+  - 06-frontend-deployment.yaml
+  - 07-hpa.yaml
+  - 08-ingress.yaml
+
+commonLabels:
+  app.kubernetes.io/part-of: cognicode-platform
+  app.kubernetes.io/managed-by: kustomize

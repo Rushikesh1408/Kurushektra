@@ -27,6 +27,7 @@ class Settings(BaseSettings):
 
     judge0_url: str = ""
     judge0_auth_token: str = ""
+    judge0_enable_per_process_limits: bool = True
 
     # Innovation Demo Simulation Mode (strictly separated from Judge0, disabled by default)
     demo_mode: bool = False
