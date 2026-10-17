@@ -4,10 +4,11 @@ import Editor from '@monaco-editor/react';
 import { Icon, DifficultyBadge, SimulatedDemoLabel } from '../../components/ui';
 import { mockChallenges, mockSubmissions } from '../../data/mockData';
 import { api } from '../../services/api';
+import { offlineSync } from '../../services/offlineSync';
 import type { BackendSubmission, BackendChallengeDetail } from '../../services/api';
 
 type WorkspaceTab = 'problem' | 'code' | 'output' | 'hints';
-type OutputTab = 'tests' | 'guidance' | 'hints' | 'ast' | 'console';
+type OutputTab = 'tests' | 'guidance' | 'hints' | 'alternatives' | 'ast' | 'console';
 
 export default function CodingWorkspacePage() {
   const { challengeId } = useParams<{ challengeId: string }>();
@@ -28,7 +29,10 @@ export default function CodingWorkspacePage() {
   });
 
   const [language, setLanguage] = useState<'python' | 'javascript' | 'java'>('python');
-  const [code, setCode] = useState(fallbackChallenge.starterCode['python'] || '');
+  const [code, setCode] = useState(
+    offlineSync.getDraft(challengeId || fallbackChallenge.id, 'python') ||
+    fallbackChallenge.starterCode['python'] || ''
+  );
   const [activeTab, setActiveTab] = useState<WorkspaceTab>('code');
   const [isRunning, setIsRunning] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -38,8 +42,18 @@ export default function CodingWorkspacePage() {
 
   // Progressive Hints state
   const [unlockedHints, setUnlockedHints] = useState<number>(0);
+  const [currentHintLevel, setCurrentHintLevel] = useState<number>(1);
+  const [hintData, setHintData] = useState<{ hint_level: number; hint_title: string; hint_text: string; target_area?: string } | null>(null);
+  const [hintLoading, setHintLoading] = useState(false);
 
-  // Challenge hints definition
+  // Alternative Paradigms & Failure Explanation state
+  const [altData, setAltData] = useState<{ current_approach_summary: string; alternatives: Array<{ approach_name: string; description: string; time_complexity: string; space_complexity: string; code_example: string; trade_offs: string }> } | null>(null);
+  const [altLoading, setAltLoading] = useState(false);
+  const [failureExplanation, setFailureExplanation] = useState<{ summary: string; suspected_cause: string; suggested_fix: string } | null>(null);
+  const [explainingFailure, setExplainingFailure] = useState(false);
+  const [draftSaved, setDraftSaved] = useState(false);
+
+  // Challenge baseline hints definition
   const hints = [
     {
       level: 1,
@@ -63,7 +77,69 @@ export default function CodingWorkspacePage() {
   const [lastSubmission, setLastSubmission] = useState<BackendSubmission | null>(null);
   const [consoleLogs, setConsoleLogs] = useState<string>('');
 
-  // Fetch real challenge details from backend
+  const handleCodeChange = (newVal: string) => {
+    setCode(newVal);
+    offlineSync.saveDraft(challenge.id, language, newVal);
+    setDraftSaved(true);
+    setTimeout(() => setDraftSaved(false), 2000);
+  };
+
+  const handleFetchHint = async (level: number) => {
+    if (!lastSubmission) {
+      setErrorMessage('Please run code first so the AI Brain has execution diagnostics for hints.');
+      return;
+    }
+    setHintLoading(true);
+    setCurrentHintLevel(level);
+    try {
+      const res = await api.comprehension.getHint(lastSubmission.id, level);
+      setHintData(res);
+      setActiveOutputTab('hints');
+      setIsOutputCollapsed(false);
+    } catch (err: any) {
+      console.error('Failed to get hint:', err);
+      setErrorMessage(err?.message || 'Failed to retrieve progressive hint from AI Brain.');
+    } finally {
+      setHintLoading(false);
+    }
+  };
+
+  const handleFetchAlternatives = async () => {
+    if (!lastSubmission) {
+      setErrorMessage('Please run code first to analyze current solution alternatives.');
+      return;
+    }
+    setAltLoading(true);
+    try {
+      const res = await api.comprehension.getAlternatives(lastSubmission.id);
+      setAltData(res);
+      setActiveOutputTab('alternatives');
+      setIsOutputCollapsed(false);
+    } catch (err: any) {
+      console.error('Failed to get alternatives:', err);
+      setErrorMessage(err?.message || 'Failed to retrieve alternative approaches.');
+    } finally {
+      setAltLoading(false);
+    }
+  };
+
+  const handleExplainFailure = async () => {
+    if (!lastSubmission) return;
+    setExplainingFailure(true);
+    try {
+      const res = await api.comprehension.explainFailure(lastSubmission.id);
+      setFailureExplanation(res);
+      setActiveOutputTab('console');
+      setIsOutputCollapsed(false);
+    } catch (err: any) {
+      console.error('Failed to explain failure:', err);
+      setErrorMessage(err?.message || 'Failed to explain test failure.');
+    } finally {
+      setExplainingFailure(false);
+    }
+  };
+
+  // Fetch real challenge details from backend if available
   useEffect(() => {
     let mounted = true;
     async function fetchChallenge() {
@@ -113,8 +189,11 @@ export default function CodingWorkspacePage() {
             },
           }));
 
-          if (starterMap['python']) {
-            setCode(starterMap['python']);
+          const cachedDraft = offlineSync.getDraft(chDetail.id, language);
+          if (cachedDraft) {
+            setCode(cachedDraft);
+          } else if (starterMap[language]) {
+            setCode(starterMap[language]);
           }
         }
       } catch (err) {
@@ -125,11 +204,14 @@ export default function CodingWorkspacePage() {
     return () => {
       mounted = false;
     };
-  }, [challengeId]);
+  }, [challengeId, language]);
 
   const handleLanguageChange = (newLang: 'python' | 'javascript' | 'java') => {
     setLanguage(newLang);
-    if (challenge.starterCode[newLang]) {
+    const cached = offlineSync.getDraft(challenge.id, newLang);
+    if (cached) {
+      setCode(cached);
+    } else if (challenge.starterCode[newLang]) {
       setCode(challenge.starterCode[newLang]);
     }
   };
@@ -487,7 +569,21 @@ export default function CodingWorkspacePage() {
               language={language === 'python' ? 'python' : language === 'javascript' ? 'javascript' : 'java'}
               theme="vs-dark"
               value={code}
-              onChange={val => setCode(val || '')}
+              onChange={val => handleCodeChange(val || '')}
+              onMount={(editor) => {
+                editor.onDidPaste((e) => {
+                  try {
+                    const pasteLen = editor.getModel()?.getValueInRange(e.range).length || 0;
+                    void api.learning.recordTelemetry({
+                      challenge_id: challenge.id,
+                      paste_events: 1,
+                      paste_length: pasteLen,
+                    });
+                  } catch {
+                    // Non-blocking telemetry
+                  }
+                });
+              }}
               options={{
                 minimap: { enabled: false },
                 fontSize: 13,
@@ -497,7 +593,7 @@ export default function CodingWorkspacePage() {
                 wordWrap: 'on',
                 tabSize: 4,
                 automaticLayout: true,
-                padding: { top: 10, bottom: 10 },
+                padding: { top: 12, bottom: 12 },
               }}
             />
           </div>
@@ -543,6 +639,36 @@ export default function CodingWorkspacePage() {
 
                 <button
                   onClick={() => {
+                    setActiveOutputTab('hints');
+                    setIsOutputCollapsed(false);
+                  }}
+                  className={`px-2.5 py-1 text-xs font-mono uppercase tracking-wider rounded transition-colors flex items-center gap-1 ${
+                    activeOutputTab === 'hints' && !isOutputCollapsed
+                      ? 'bg-[#111315] text-[#F2B866] font-bold border border-[#343A40]'
+                      : 'text-[#B7BEC5] hover:text-[#F2F3F5]'
+                  }`}
+                >
+                  <Icon name="lightbulb" size={13} />
+                  <span>AI Hints {hintData ? `(L${hintData.hint_level})` : ''}</span>
+                </button>
+
+                <button
+                  onClick={() => {
+                    setActiveOutputTab('alternatives');
+                    setIsOutputCollapsed(false);
+                  }}
+                  className={`px-2.5 py-1 text-xs font-mono uppercase tracking-wider rounded transition-colors flex items-center gap-1 ${
+                    activeOutputTab === 'alternatives' && !isOutputCollapsed
+                      ? 'bg-[#111315] text-[#8FAFF5] font-bold border border-[#343A40]'
+                      : 'text-[#B7BEC5] hover:text-[#F2F3F5]'
+                  }`}
+                >
+                  <Icon name="alt_route" size={13} />
+                  <span>Alternatives</span>
+                </button>
+
+                <button
+                  onClick={() => {
                     setActiveOutputTab('ast');
                     setIsOutputCollapsed(false);
                   }}
@@ -552,7 +678,7 @@ export default function CodingWorkspacePage() {
                       : 'text-[#B7BEC5] hover:text-[#F2F3F5]'
                   }`}
                 >
-                  AST Analysis
+                  AST / Proof
                 </button>
 
                 <button
@@ -619,6 +745,19 @@ export default function CodingWorkspacePage() {
                         {isRunning ? 'Executing test suite on backend runner...' : 'No test results returned yet.'}
                       </div>
                     )}
+
+                    {lastSubmission && lastSubmission.passed < lastSubmission.total && (
+                      <div className="pt-2">
+                        <button
+                          onClick={handleExplainFailure}
+                          disabled={explainingFailure}
+                          className="btn btn-secondary text-xs font-mono text-[#F2B866] flex items-center gap-1.5 py-1.5"
+                        >
+                          <Icon name="psychology" size={14} />
+                          <span>{explainingFailure ? 'Analyzing Failure...' : 'Explain Failed Tests with AI Brain'}</span>
+                        </button>
+                      </div>
+                    )}
                   </div>
                 ) : activeOutputTab === 'guidance' ? (
                   /* ── Actionable Educational Guidance (Section 7) ── */
@@ -664,12 +803,104 @@ export default function CodingWorkspacePage() {
                       </div>
                     </div>
                   </div>
+                ) : activeOutputTab === 'hints' ? (
+                  /* ── AI Brain Progressive Hints Tab ── */
+                  <div className="space-y-3 font-sans">
+                    <div className="flex items-center gap-2 pb-2 border-b border-[#343A40]">
+                      <span className="text-xs text-[#737E89] font-mono">Progressive Levels:</span>
+                      {[1, 2, 3, 4].map(lvl => (
+                        <button
+                          key={lvl}
+                          onClick={() => handleFetchHint(lvl)}
+                          disabled={hintLoading}
+                          className={`px-2 py-0.5 rounded text-xs font-mono uppercase transition-colors ${
+                            currentHintLevel === lvl && hintData
+                              ? 'bg-[#F2B866]/20 text-[#F2B866] border border-[#F2B866]/40 font-bold'
+                              : 'bg-[#1C2022] text-[#B7BEC5] hover:text-[#60E3D0]'
+                          }`}
+                        >
+                          Level {lvl}: {lvl === 1 ? 'Concept' : lvl === 2 ? 'Location' : lvl === 3 ? 'Action' : 'Detailed'}
+                        </button>
+                      ))}
+                    </div>
+
+                    {hintLoading ? (
+                      <div className="text-[#F2B866] flex items-center gap-2 text-xs font-mono">
+                        <Icon name="sync" size={14} className="animate-spin" />
+                        <span>AI Brain is synthesizing progressive hint from execution diagnostics...</span>
+                      </div>
+                    ) : hintData ? (
+                      <div className="p-3 rounded-lg bg-[#15181A] border border-[#F2B866]/40 space-y-1.5">
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-bold text-[#F2B866] font-mono uppercase tracking-wider">{hintData.hint_title}</span>
+                          {hintData.target_area && (
+                            <span className="badge badge-neutral text-[10px] font-mono">{hintData.target_area}</span>
+                          )}
+                        </div>
+                        <p className="text-xs text-[#B7BEC5] leading-relaxed font-sans">{hintData.hint_text}</p>
+                      </div>
+                    ) : (
+                      <div className="text-[#737E89] text-xs flex items-center justify-between font-mono">
+                        <span>Select a level above to generate a progressive hint from the AI Brain.</span>
+                        <button
+                          onClick={() => handleFetchHint(1)}
+                          className="btn btn-secondary text-xs font-mono py-1 px-2.5"
+                        >
+                          Get Level 1 Hint
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                ) : activeOutputTab === 'alternatives' ? (
+                  /* ── Alternative Solutions Tab ── */
+                  <div className="space-y-3 font-sans">
+                    <div className="flex items-center justify-between pb-2 border-b border-[#343A40]">
+                      <span className="text-xs text-[#737E89] font-mono">Alternative Solution Paradigms:</span>
+                      <button
+                        onClick={handleFetchAlternatives}
+                        disabled={altLoading}
+                        className="btn btn-secondary text-xs font-mono flex items-center gap-1 text-[#8FAFF5] py-1 px-2.5"
+                      >
+                        <Icon name="sync" size={13} className={altLoading ? 'animate-spin' : ''} />
+                        <span>{altLoading ? 'Analyzing...' : 'Analyze Alternatives'}</span>
+                      </button>
+                    </div>
+
+                    {altLoading ? (
+                      <div className="text-[#8FAFF5] flex items-center gap-2 text-xs font-mono">
+                        <Icon name="sync" size={14} className="animate-spin" />
+                        <span>AI Brain is evaluating algorithmic trade-offs and complexity models...</span>
+                      </div>
+                    ) : altData ? (
+                      <div className="space-y-2">
+                        <p className="text-xs text-[#B7BEC5] font-sans italic">{altData.current_approach_summary}</p>
+                        {altData.alternatives.map((alt, idx) => (
+                          <div key={idx} className="p-2.5 rounded bg-[#15181A] border border-[#343A40] space-y-1">
+                            <div className="flex items-center justify-between">
+                              <span className="text-[#60E3D0] font-bold text-xs font-mono">{alt.approach_name}</span>
+                              <div className="flex items-center gap-2 text-xs text-[#737E89] font-mono">
+                                <span>Time: {alt.time_complexity}</span>
+                                <span>·</span>
+                                <span>Space: {alt.space_complexity}</span>
+                              </div>
+                            </div>
+                            <p className="text-xs text-[#B7BEC5] font-sans">{alt.description}</p>
+                            <div className="text-xs text-[#F2B866] font-sans">Trade-offs: {alt.trade_offs}</div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="text-[#737E89] text-xs font-mono">
+                        Click "Analyze Alternatives" to compare your solution with alternative algorithmic approaches.
+                      </div>
+                    )}
+                  </div>
                 ) : activeOutputTab === 'ast' ? (
-                  <div className="space-y-2 text-xs">
+                  <div className="space-y-2 text-xs font-sans">
                     <div className="p-2.5 rounded bg-[#15181A] border border-[#343A40] space-y-1.5">
                       <div className="flex items-center gap-2 text-[#83D69A]">
                         <Icon name="check_circle" size={15} />
-                        <span className="font-semibold">Abstract Syntax Tree Parsed</span>
+                        <span className="font-semibold font-mono">Abstract Syntax Tree Parsed</span>
                       </div>
                       <p className="text-[#B7BEC5] text-xs font-sans">
                         Control flow graphs and loop invariants analyzed. Complexity matches expected O(n) amortized bound.
@@ -679,14 +910,14 @@ export default function CodingWorkspacePage() {
                     <div className="p-2.5 rounded bg-[#15181A] border border-[#343A40] space-y-1.5">
                       <div className="flex items-center gap-2 text-[#F2B866]">
                         <Icon name="psychology" size={15} />
-                        <span className="font-semibold">Cognitive Verification Prompt Queued</span>
+                        <span className="font-semibold font-mono">Cognitive Verification Prompt Queued</span>
                       </div>
                       <p className="text-[#B7BEC5] text-xs font-sans">
                         Submission triggers follow-up verification questions to ensure full conceptual understanding of hash collisions and pointer persistence.
                       </p>
                       <Link
                         to={`/assessment/${lastSubmission?.id || 's1'}`}
-                        className="btn btn-secondary text-xs font-mono py-1 px-2.5 inline-flex items-center gap-1 mt-1"
+                        className="btn btn-secondary text-xs font-mono py-1 px-2.5 inline-flex items-center gap-1 mt-1 text-[#60E3D0]"
                       >
                         <span>Take Understanding Assessment</span>
                         <Icon name="arrow_forward" size={12} />
@@ -694,9 +925,21 @@ export default function CodingWorkspacePage() {
                     </div>
                   </div>
                 ) : (
-                  <pre className="text-[#B7BEC5] m-0 text-xs whitespace-pre-wrap leading-relaxed font-mono">
-                    {consoleLogs || 'No output recorded.'}
-                  </pre>
+                  <div className="space-y-3 font-mono">
+                    {failureExplanation && (
+                      <div className="p-3 bg-[#E99AA4]/10 border border-[#E99AA4]/30 rounded space-y-1 font-sans">
+                        <div className="flex items-center gap-2 text-[#E99AA4] text-xs font-bold uppercase font-mono">
+                          <Icon name="error" size={14} />
+                          <span>AI Diagnostic: {failureExplanation.summary}</span>
+                        </div>
+                        <p className="text-xs text-[#B7BEC5]"><strong>Suspected Cause:</strong> {failureExplanation.suspected_cause}</p>
+                        <p className="text-xs text-[#83D69A]"><strong>Suggested Fix:</strong> {failureExplanation.suggested_fix}</p>
+                      </div>
+                    )}
+                    <pre className="text-[#B7BEC5] m-0 text-xs whitespace-pre-wrap leading-relaxed">
+                      {consoleLogs || 'No output recorded.'}
+                    </pre>
+                  </div>
                 )}
               </div>
             )}
@@ -709,6 +952,12 @@ export default function CodingWorkspacePage() {
                 <span>UTF-8</span>
                 <span>·</span>
                 <span>FastAPI Runner</span>
+                {draftSaved && (
+                  <span className="text-[#83D69A] font-sans ml-2 flex items-center gap-1">
+                    <Icon name="check" size={12} />
+                    <span>Draft autosaved</span>
+                  </span>
+                )}
               </div>
 
               <div className="flex items-center gap-2">

@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 logger = logging.getLogger("codearena.submissions")
 
 from app.models import Challenge, ExecutionJob, Language, Submission, TestCase, TestCaseResult, User
-from app.models.base import JobStatus, ResultStatus, SubmissionStatus, utcnow
+from app.models.base import JobStatus, ResultStatus, SubmissionStatus, as_aware, utcnow
 from app.schemas import (
     SubmissionListItem, SubmissionReviewOut, SubmissionStudentOut, TestResultReviewOut, TestResultStudentOut,
 )
@@ -16,11 +16,47 @@ from app.services.executor import Executor, ExecutorUnavailable, Outcome, RunRes
 from app.services.grading import CUSTOM_OUTPUT_CHARS, MAX_OUTPUT_CHARS, outputs_match, sanitize
 
 MAX_ACTIVE_PER_USER = 3
+MAX_JOB_RETRIES = 3
+
 _OUTCOME_TO_STATUS = {
     Outcome.COMPILE_ERROR: ResultStatus.COMPILE_ERROR, Outcome.RUNTIME_ERROR: ResultStatus.RUNTIME_ERROR,
     Outcome.TIMEOUT: ResultStatus.TIMEOUT, Outcome.MEMORY_LIMIT: ResultStatus.MEMORY_LIMIT,
     Outcome.OUTPUT_LIMIT: ResultStatus.OUTPUT_LIMIT,
 }
+
+
+class InvalidStateTransitionError(ValueError):
+    """Raised when an illegal status transition is attempted."""
+
+
+def transition_submission_status(sub: Submission, new_status: SubmissionStatus) -> None:
+    """Validate and apply a SubmissionStatus transition."""
+    allowed: dict[SubmissionStatus, set[SubmissionStatus]] = {
+        SubmissionStatus.QUEUED: {SubmissionStatus.RUNNING, SubmissionStatus.FAILED},
+        SubmissionStatus.RUNNING: {SubmissionStatus.COMPLETED, SubmissionStatus.FAILED, SubmissionStatus.QUEUED},
+        SubmissionStatus.COMPLETED: set(),
+        SubmissionStatus.FAILED: set(),
+    }
+    if new_status != sub.status and new_status not in allowed.get(sub.status, set()):
+        raise InvalidStateTransitionError(
+            f"Cannot transition Submission from {sub.status.value} to {new_status.value}"
+        )
+    sub.status = new_status
+
+
+def transition_job_status(job: ExecutionJob, new_status: JobStatus) -> None:
+    """Validate and apply a JobStatus transition."""
+    allowed: dict[JobStatus, set[JobStatus]] = {
+        JobStatus.QUEUED: {JobStatus.RUNNING, JobStatus.ERROR},
+        JobStatus.RUNNING: {JobStatus.FINISHED, JobStatus.ERROR, JobStatus.QUEUED},
+        JobStatus.FINISHED: set(),
+        JobStatus.ERROR: set(),
+    }
+    if new_status != job.status and new_status not in allowed.get(job.status, set()):
+        raise InvalidStateTransitionError(
+            f"Cannot transition ExecutionJob from {job.status.value} to {new_status.value}"
+        )
+    job.status = new_status
 
 
 def create_submission(db: Session, *, user: User, challenge: Challenge, language: Language, source: str,
@@ -34,13 +70,32 @@ def create_submission(db: Session, *, user: User, challenge: Challenge, language
     return sub
 
 
-def active_count(db: Session, user_id: str) -> int:
-    rows = db.scalars(select(Submission.id).where(
-        Submission.user_id == user_id, Submission.status.in_([SubmissionStatus.QUEUED, SubmissionStatus.RUNNING])))
+def active_count(db: Session, user_id: str | None = None, challenge_id: str | None = None) -> int:
+    """Return count of submissions actively QUEUED or RUNNING.
+
+    Completed, failed, and finished jobs are strictly excluded. Supports user or challenge scope.
+    """
+    conditions = [Submission.status.in_([SubmissionStatus.QUEUED, SubmissionStatus.RUNNING])]
+    if user_id is not None:
+        conditions.append(Submission.user_id == user_id)
+    if challenge_id is not None:
+        conditions.append(Submission.challenge_id == challenge_id)
+    rows = db.scalars(select(Submission.id).where(*conditions))
     return len(rows.all())
 
 
 # ---------------- worker side ----------------
+def _purge_results(db: Session, submission_id: str) -> None:
+    """Remove all prior TestCaseResult rows for a submission.
+
+    Called at the start of every run attempt so a requeued job cannot collide with the
+    UNIQUE (submission_id, test_case_id) constraint, and so a failed retry leaves no partial rows.
+    """
+    for res in list(db.scalars(select(TestCaseResult).where(TestCaseResult.submission_id == submission_id))):
+        db.delete(res)
+    db.flush()
+
+
 def classify(run: RunResult, expected: str) -> ResultStatus:
     if run.outcome != Outcome.OK:
         return _OUTCOME_TO_STATUS[run.outcome]
@@ -65,18 +120,37 @@ def process_next_job(db: Session, executor: Executor) -> str | None:
     return job.id
 
 
-def requeue_stale(db: Session, minutes: int = 5) -> int:
-    """Jobs left RUNNING by a crashed worker go back to the queue."""
+def requeue_stale(db: Session, minutes: int = 5, max_retries: int = MAX_JOB_RETRIES) -> int:
+    """Jobs left RUNNING by a crashed worker go back to the queue or escalate to ERROR/FAILED.
+
+    - Compares timezone-aware UTC timestamps safely (handles naive and aware).
+    - Increments retry_count.
+    - If retry_count >= max_retries, moves job to ERROR and submission to FAILED.
+    - Prevents duplicate processing and records failure timestamps.
+    """
     cutoff = utcnow() - timedelta(minutes=minutes)
     n = 0
-    for job in db.scalars(select(ExecutionJob).where(ExecutionJob.status == JobStatus.RUNNING)):
-        started = job.started_at if job.started_at and job.started_at.tzinfo else (
-            job.started_at.replace(tzinfo=cutoff.tzinfo) if job.started_at else None)
-        if started is None or started < cutoff:
-            job.status = JobStatus.QUEUED
+    jobs = list(db.scalars(select(ExecutionJob).where(ExecutionJob.status == JobStatus.RUNNING)).all())
+    for job in jobs:
+        started = as_aware(job.started_at)
+        created = as_aware(job.created_at)
+        is_stale = (started is not None and started < cutoff) or (started is None and created is not None and created < cutoff)
+        if is_stale:
+            job.retry_count = (job.retry_count or 0) + 1
             sub = db.get(Submission, job.submission_id)
-            if sub:
-                sub.status = SubmissionStatus.QUEUED
+            if job.retry_count >= max_retries:
+                job.status = JobStatus.ERROR
+                job.finished_at = utcnow()
+                job.error_message = f"Execution timed out and exceeded maximum retries ({job.retry_count}/{max_retries})."
+                if sub:
+                    sub.status = SubmissionStatus.FAILED
+                logger.warning("Job %s exhausted retries (%d/%d); marked ERROR", job.id, job.retry_count, max_retries)
+            else:
+                job.status = JobStatus.QUEUED
+                job.started_at = None
+                if sub:
+                    sub.status = SubmissionStatus.QUEUED
+                logger.info("Job %s stale; requeued (attempt %d/%d)", job.id, job.retry_count, max_retries)
             n += 1
     db.commit()
     return n
@@ -84,9 +158,30 @@ def requeue_stale(db: Session, minutes: int = 5) -> int:
 
 def run_job(db: Session, job: ExecutionJob, executor: Executor) -> None:
     sub = db.get(Submission, job.submission_id)
+    if not sub:
+        job.status = JobStatus.ERROR
+        job.error_message = "Associated submission missing."
+        job.finished_at = utcnow()
+        db.commit()
+        return
+
+    # Check if job is still in an executable state (skip if already finished by another worker)
+    if job.status not in (JobStatus.QUEUED, JobStatus.RUNNING):
+        logger.info("Job %s is already in terminal status %s; skipping", job.id, job.status)
+        return
+
     ch = db.get(Challenge, sub.challenge_id)
     lang = db.get(Language, sub.language_id)
-    job.status, job.started_at, sub.status = JobStatus.RUNNING, utcnow(), SubmissionStatus.RUNNING
+    
+    transition_job_status(job, JobStatus.RUNNING)
+    job.started_at = utcnow()
+    transition_submission_status(sub, SubmissionStatus.RUNNING)
+    
+    # Clear results from any previous attempt on this submission. A job can legitimately be run more
+    # than once (stale-requeue after a worker crash), and TestCaseResult has a UNIQUE constraint on
+    # (submission_id, test_case_id). Without this purge the second attempt would violate that
+    # constraint and crash the worker mid-run. This keeps one submission = one result per test case.
+    _purge_results(db, sub.id)
     db.commit()
 
     def run(stdin: str) -> RunResult:
@@ -118,15 +213,25 @@ def run_job(db: Session, job: ExecutionJob, executor: Executor) -> None:
                 db.add(TestCaseResult(
                     submission_id=sub.id, test_case_id=t.id, status=classify(r, t.expected_output),
                     runtime_ms=r.time_ms, memory_kb=r.memory_kb, output_excerpt=_excerpt(r)))
-        job.status, sub.status = JobStatus.FINISHED, SubmissionStatus.COMPLETED
+        transition_job_status(job, JobStatus.FINISHED)
+        transition_submission_status(sub, SubmissionStatus.COMPLETED)
     except ExecutorUnavailable:
         db.rollback()
         job = db.get(ExecutionJob, job.id)
         sub = db.get(Submission, sub.id)
-        for res in list(sub.results):
-            db.delete(res)
-        job.status, sub.status = JobStatus.ERROR, SubmissionStatus.FAILED
+        _purge_results(db, sub.id)
+        job.status = JobStatus.ERROR
+        sub.status = SubmissionStatus.FAILED
         job.error_message = "The code runner is unavailable right now. Try again in a minute."
+    except Exception as exc:
+        db.rollback()
+        job = db.get(ExecutionJob, job.id)
+        sub = db.get(Submission, sub.id)
+        _purge_results(db, sub.id)
+        job.status = JobStatus.ERROR
+        sub.status = SubmissionStatus.FAILED
+        job.error_message = "An unexpected error occurred during code execution."
+        logger.exception("Unexpected error in run_job: %s", exc)
     job.finished_at = utcnow()
     db.commit()
 

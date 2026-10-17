@@ -18,6 +18,13 @@ class Settings(BaseSettings):
     cookie_secure: bool = True  # set COOKIE_SECURE=false only for plain-http local development
     login_rate_limit: str = "10/minute"
 
+    # Comma-separated CIDRs/IPs of reverse proxies (nginx, a load balancer, a PaaS edge) whose
+    # X-Forwarded-For header we are willing to trust. Empty by default: when the app is reached
+    # directly, the socket peer address is the real client and no header is honoured. Setting this
+    # wrongly (trusting a proxy that a client can reach directly) would let anyone forge their
+    # apparent IP, so it must list only infrastructure you actually control.
+    trusted_proxies: str = ""
+
     judge0_url: str = ""
     judge0_auth_token: str = ""
 
@@ -50,6 +57,10 @@ class Settings(BaseSettings):
     @property
     def cors_origin_list(self) -> list[str]:
         return [o.strip() for o in self.cors_origins.split(",") if o.strip()]
+
+    @property
+    def trusted_proxy_list(self) -> list[str]:
+        return [p.strip() for p in self.trusted_proxies.split(",") if p.strip()]
 
 
 @lru_cache

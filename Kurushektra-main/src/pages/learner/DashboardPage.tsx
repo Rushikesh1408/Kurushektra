@@ -1,11 +1,59 @@
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { Icon, ProgressBar, SectionHeader, MasteryBadge, StatusBadge } from '../../components/ui';
 import { mockMastery, mockGaps, mockSubmissions } from '../../data/mockData';
+import { api } from '../../services/api';
 
 export default function DashboardPage() {
   const { user } = useAuth();
-  const topMastery = mockMastery.slice(0, 4);
+  const [masteryData, setMasteryData] = useState(mockMastery);
+  const [gapList, setGapList] = useState(mockGaps);
+
+  useEffect(() => {
+    let mounted = true;
+    async function loadDashboardData() {
+      try {
+        const [mRes, gRes] = await Promise.allSettled([
+          api.adaptive.mastery(),
+          api.adaptive.gaps(),
+        ]);
+
+        if (mounted && mRes.status === 'fulfilled' && mRes.value.length > 0) {
+          const mapped = mRes.value.map(bm => ({
+            concept: bm.name,
+            level: bm.status as any,
+            percentage: Math.round(bm.mastery_score * 100),
+            confidence: bm.confidence > 0.7 ? ('high' as const) : bm.confidence > 0.4 ? ('medium' as const) : ('low' as const),
+            testsCompleted: bm.total_attempts,
+            testsTotal: Math.max(5, bm.total_attempts + 2),
+            lastAssessed: new Date().toISOString(),
+          }));
+          setMasteryData(mapped);
+        }
+
+        if (mounted && gRes.status === 'fulfilled' && gRes.value.length > 0) {
+          const mappedGaps = gRes.value.map((bg, idx) => ({
+            id: `gap-${idx}`,
+            concept: bg.target_concept,
+            severity: bg.root_mastery < 0.3 ? ('high' as const) : ('medium' as const),
+            description: `${bg.reason} Focus on prerequisite: ${bg.root_gap_concept}`,
+            relatedChallenges: [bg.target_slug],
+            resources: [{ type: 'article' as const, title: `${bg.root_gap_concept} Documentation`, url: '#' }],
+          }));
+          setGapList(mappedGaps);
+        }
+      } catch (err) {
+        console.warn('Could not load dashboard data from backend:', err);
+      }
+    }
+    loadDashboardData();
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  const topMastery = masteryData.slice(0, 4);
   const recentSubmissions = mockSubmissions.slice(0, 4);
 
   return (
@@ -148,7 +196,7 @@ export default function DashboardPage() {
           />
 
           <div className="space-y-3">
-            {mockGaps.map(gap => (
+            {gapList.map(gap => (
               <div
                 key={gap.id}
                 className="p-3.5 rounded-lg bg-[#15181A] border border-[#343A40] space-y-2 hover:border-[#56606A] transition-colors"
@@ -163,7 +211,7 @@ export default function DashboardPage() {
                   {gap.description}
                 </p>
                 <div className="flex items-center justify-between pt-1">
-                  <span className="text-[11px] text-[#737E89] font-mono">Found in 2 recent attempts</span>
+                  <span className="text-[11px] text-[#737E89] font-mono">Found in recent attempts</span>
                   <Link
                     to={`/learn/gap/${gap.id}`}
                     className="text-xs font-mono text-[#60E3D0] hover:underline flex items-center gap-1"
