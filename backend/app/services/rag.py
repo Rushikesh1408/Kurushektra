@@ -135,7 +135,15 @@ def hybrid_search(
     if course:
         conditions.append(KnowledgeDocument.course == course)
 
-    # Fetch matching documents and chunks
+    from sqlalchemy import or_
+    term_filters = []
+    for t in q_terms[:8]:
+        term_filters.append(KnowledgeChunk.content.ilike(f"%{t}%"))
+        term_filters.append(KnowledgeDocument.title.ilike(f"%{t}%"))
+    if term_filters:
+        conditions.append(or_(*term_filters))
+
+    # Fetch matching documents and candidate chunks
     stmt = (
         select(KnowledgeChunk, KnowledgeDocument)
         .join(KnowledgeDocument, KnowledgeChunk.document_id == KnowledgeDocument.id)

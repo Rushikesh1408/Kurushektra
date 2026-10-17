@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from sqlalchemy import func, or_, select
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, selectinload
 
 from app.api.deps import audit, get_current_user, require_roles
 from app.core.database import get_db
@@ -39,10 +39,19 @@ def list_challenges(page: int = Query(1, ge=1), page_size: int = Query(20, ge=1,
         cond = True  # type: ignore[assignment]
     base = select(Challenge).where(cond)
     total = db.scalar(select(func.count()).select_from(base.subquery())) or 0
-    rows = db.scalars(base.order_by(Challenge.created_at.desc()).offset((page - 1) * page_size).limit(page_size)).all()
+    rows = db.scalars(
+        base.options(selectinload(Challenge.languages))
+        .order_by(Challenge.created_at.desc())
+        .offset((page - 1) * page_size)
+        .limit(page_size)
+    ).all()
+    langs_by_id = {l.id: l.key for l in db.scalars(select(Language)).all()}
     items = [
-        ChallengeListItem(id=c.id, slug=c.slug, title=c.title, difficulty=c.difficulty, is_published=c.is_published,
-                          is_fixture=c.is_fixture, languages=[db.get(Language, cl.language_id).key for cl in c.languages])
+        ChallengeListItem(
+            id=c.id, slug=c.slug, title=c.title, difficulty=c.difficulty, is_published=c.is_published,
+            is_fixture=c.is_fixture,
+            languages=[langs_by_id.get(cl.language_id, "") for cl in c.languages if cl.language_id in langs_by_id]
+        )
         for c in rows
     ]
     return Page(items=items, total=total, page=page, page_size=page_size)

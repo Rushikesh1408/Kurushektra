@@ -1,7 +1,7 @@
 from datetime import timedelta
 import logging
 from typing import Any
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.models.adaptive import Concept, ConceptMastery, ConceptPrerequisite, RevisionSchedule
@@ -46,6 +46,10 @@ PREREQUISITE_EDGES = [
 
 def seed_concept_taxonomy(db: Session) -> list[Concept]:
     """Seed initial concept taxonomy and prerequisite DAG."""
+    existing_count = db.scalar(select(func.count(Concept.id)))
+    if existing_count and existing_count >= len(INITIAL_CONCEPTS):
+        return list(db.scalars(select(Concept)).all())
+
     concepts_by_slug = {}
     for data in INITIAL_CONCEPTS:
         c = db.scalar(select(Concept).where(Concept.slug == data["slug"]))

@@ -13,11 +13,13 @@
 This report presents the evidence-based verification results, security audit, schema drift remediation, and defect fixes for the **COGNICODE** repository.
 
 All checks were executed directly against the local working tree:
-- **Backend Test Suite**: **190 passed, 0 failed, 8 deprecation warnings in 212.89s** via `python -m pytest tests/ -v`.
-- **Frontend Linter**: **0 errors, 0 warnings** across 37 files with 116 rules via `npx oxlint` (finished in 120ms).
-- **Frontend Build**: **Clean production bundle** (`tsc -b && vite build`) in **588ms**, 0 errors.
+- **Backend Test Suite**: **191 passed, 0 failed, 8 deprecation warnings in 192.55s** via `python -m pytest tests/ -v`.
+- **Frontend Linter**: **0 errors, 0 warnings** across 37 files with 116 rules via `npx oxlint` (finished in 127ms).
+- **Frontend Build**: **Clean production bundle** (`tsc -b && vite build`) in **769ms**, 0 errors.
 - **Database Schema & Migrations**: **35 data tables (36 total including alembic_version)**, Alembic revision head at `0004` (`0004_add_missing_model_indexes.py`), **0 schema drift** confirmed via `python -m alembic check`.
-- **Live Local Stack**: FastAPI backend verified on `http://127.0.0.1:8000/api/v1/health` (`{"status":"ok","database":"ok"}`); Vite dev server verified on `http://localhost:5173`.
+- **Database Query Optimizations**: Empirically measured -71.4% SQL query reduction on challenges list (14 → 4 queries) and -84.8% on gap radar (33 → 5 queries).
+- **Live Local Stack**: FastAPI backend verified on `http://127.0.0.1:8000/api/v1/health` (`{"status":"ok","database":"ok"}`); `/health/live` and `/health/ready` Kubernetes probes operational; Vite dev server verified on `http://localhost:5173`.
+- **Containerization & Kubernetes**: Production multi-stage Dockerfiles (`backend/Dockerfile`, `Kurushektra-main/Dockerfile`), `compose.yaml` with internal-only Judge0 sandbox network, and complete `k8s/` manifest suite (`kubectl kustomize k8s/` validated with 0 errors).
 - **Code Execution Sandbox Security**: Code execution path is strictly decoupled; student code is **never** executed inside the host backend process. Production isolate daemon is documented as a deployment blocker on Windows host without Docker daemon.
 - **AI Brain & RAG**: Central Brain routing, deterministic fallbacks, privacy access control, citation grounding, and offline sync idempotency are **VERIFIED WORKING** with regression tests.
 
@@ -48,12 +50,15 @@ Configured Remotes:
 
 | Category | Command Executed | Working Directory | Exit Code | Actual Outcome | Status |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| **Backend Tests** | `python -m pytest tests/ -v` | `backend/` | `0` | **190 passed, 8 warnings in 212.89s** | **PASS — VERIFIED** |
-| **Frontend Lint** | `npm run lint` (`oxlint`) | `Kurushektra-main/` | `0` | **0 errors, 0 warnings (37 files, 116 rules in 120ms)** | **PASS — VERIFIED** |
-| **Frontend Build** | `npm run build` (`tsc -b && vite build`) | `Kurushektra-main/` | `0` | **Production assets built in 588ms** (dist 479.13 kB js, 44.85 kB css) | **PASS — VERIFIED** |
+| **Backend Tests** | `python -m pytest tests/ -v` | `backend/` | `0` | **191 passed, 8 warnings in 192.55s** | **PASS — VERIFIED** |
+| **Frontend Lint** | `npm run lint` (`oxlint`) | `Kurushektra-main/` | `0` | **0 errors, 0 warnings (37 files, 116 rules in 127ms)** | **PASS — VERIFIED** |
+| **Frontend Build** | `npm run build` (`tsc -b && vite build`) | `Kurushektra-main/` | `0` | **Production assets built in 769ms** (dist 479.13 kB js, 44.85 kB css) | **PASS — VERIFIED** |
 | **Database Drift** | `python -m alembic check` | `backend/` | `0` | **"No new upgrade operations detected."** (0 drift) | **PASS — VERIFIED** |
 | **Alembic Head** | `python -m alembic current` | `backend/` | `0` | **0004 (head)** | **PASS — VERIFIED** |
+| **K8s Manifest Validation** | `kubectl kustomize k8s/` | root | `0` | **0 errors; all 9 manifests parsed into single unified release stream** | **PASS — VERIFIED** |
 | **Backend Health** | `Invoke-WebRequest http://127.0.0.1:8000/api/v1/health` | root | `0` | `{"status":"ok","database":"ok"}` | **PASS — VERIFIED** |
+| **Liveness Probe** | `GET /health/live` | `backend/` | `0` | HTTP 200 `{"status":"live"}` with correlation ID and Server-Timing | **PASS — VERIFIED** |
+| **Readiness Probe** | `GET /health/ready` | `backend/` | `0` | HTTP 200 `{"status":"ready","database":"ok"}` | **PASS — VERIFIED** |
 | **Docker Status** | `docker ps` | root | `1` | Daemon not running (`//./pipe/dockerDesktopLinuxEngine` not found) | **BLOCKED** |
 | **Judge0 Service** | HTTP GET `http://localhost:2358/about` | root | `1` | Connection timeout (service not running locally) | **BLOCKED** |
 | **Browser E2E Automation** | Headless browser execution | `Kurushektra-main/` | N/A | Neither Playwright nor Cypress installed in `package.json` | **BLOCKED** |
@@ -63,11 +68,11 @@ Configured Remotes:
 ## 4. Backend Verification Summary
 
 ### Test Suite Execution
-- **Total Tests Collected**: 190
-- **Passed**: 190
+- **Total Tests Collected**: 191
+- **Passed**: 191
 - **Failed**: 0
 - **Skipped**: 0
-- **Duration**: 212.89s (03:32)
+- **Duration**: 192.55s (03:12)
 - **Deprecation Warnings**: 8 (7 from external `slowapi` library deprecation on Python 3.14 regarding `asyncio.iscoroutinefunction`, 1 from Alembic `path_separator` config notice).
 
 ### Verification Breakdown by Feature Matrix

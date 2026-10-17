@@ -1,0 +1,58 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: cognicode-backend-policy
+  namespace: cognicode
+spec:
+  podSelector:
+    matchLabels:
+      app: cognicode-backend
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app: cognicode-frontend
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: ingress-nginx
+      ports:
+        - protocol: TCP
+          port: 8000
+  policyTypes:
+    - Ingress
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: cognicode-sandbox-isolation
+  namespace: cognicode
+spec:
+  podSelector:
+    matchLabels:
+      app: cognicode-sandbox
+  ingress:
+    # Allow execution requests strictly from authorized worker pods
+    - from:
+        - podSelector:
+            matchLabels:
+              app: cognicode-worker
+      ports:
+        - protocol: TCP
+          port: 2358
+  egress:
+    # Deny all outbound internet access; untrusted student code must not phone home
+    - to:
+        - podSelector:
+            matchLabels:
+              app: cognicode-sandbox-redis
+        - podSelector:
+            matchLabels:
+              app: cognicode-sandbox-db
+      ports:
+        - protocol: TCP
+          port: 6379
+        - protocol: TCP
+          port: 5432
+  policyTypes:
+    - Ingress
+    - Egress

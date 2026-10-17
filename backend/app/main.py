@@ -25,8 +25,22 @@ def create_app() -> FastAPI:
         allow_origins=settings.cors_origin_list,
         allow_credentials=True,
         allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE"],
-        allow_headers=["Authorization", "Content-Type"],
+        allow_headers=["Authorization", "Content-Type", "X-Request-ID"],
+        expose_headers=["X-Request-ID", "Server-Timing"],
     )
+
+    @app.middleware("http")
+    async def correlation_and_timing_middleware(request: Request, call_next):
+        import time
+        import uuid
+        request_id = request.headers.get("X-Request-ID") or str(uuid.uuid4())
+        request.state.request_id = request_id
+        t0 = time.perf_counter()
+        response = await call_next(request)
+        elapsed_ms = round((time.perf_counter() - t0) * 1000, 2)
+        response.headers["X-Request-ID"] = request_id
+        response.headers["Server-Timing"] = f"total;dur={elapsed_ms}"
+        return response
 
     @app.middleware("http")
     async def security_headers(request: Request, call_next):
