@@ -71,6 +71,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
+  const register = useCallback(async (email: string, fullName: string, password: string): Promise<User> => {
+    setLoading(true);
+    try {
+      const res = await api.auth.register(email, fullName, password);
+      localStorage.setItem('cc_token', res.access_token);
+      const mapped = mapBackendUser(res.user);
+      setUser(mapped);
+      localStorage.setItem('cc_role', mapped.role);
+      return mapped;
+    } catch (err: any) {
+      if (err instanceof ApiError) {
+        throw err;
+      }
+      throw new Error(err?.message || 'Registration failed');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
   const logout = useCallback(async () => {
     try {
       await api.auth.logout();
@@ -83,7 +102,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   return (
-    <AuthContext.Provider value={{ user, isAuthenticated: !!user, login, logout, loading }}>
+    <AuthContext.Provider value={{ user, isAuthenticated: !!user, login, register, logout, loading }}>
       {children}
     </AuthContext.Provider>
   );

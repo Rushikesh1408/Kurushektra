@@ -110,7 +110,7 @@ export function WorkspaceExplorer({ role, isOpen, onClose, isMobile = false }: W
               </div>
               <div className="space-y-0.5">
                 <NavLink
-                  to="/workspace/c1"
+                  to="/workspace/two-sum"
                   onClick={onClose}
                   className={({ isActive }) => `nav-item ${isActive ? 'nav-active' : ''}`}
                 >

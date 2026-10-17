@@ -151,12 +151,13 @@ export default function CodingWorkspacePage() {
       try {
         let chDetail: BackendChallengeDetail | null = null;
         try {
-          chDetail = await api.challenges.get(challengeId);
+          const target = (!challengeId || challengeId === 'c1') ? 'two-sum' : challengeId;
+          chDetail = await api.challenges.get(target);
         } catch {
           const list = await api.challenges.list();
-          const found = list.items.find(i => i.id === challengeId || i.slug === challengeId);
+          const found = list.items.find(i => i.id === challengeId || i.slug === challengeId) || list.items[0];
           if (found) {
-            chDetail = await api.challenges.get(found.id);
+            chDetail = await api.challenges.get(found.id || found.slug);
           }
         }
 

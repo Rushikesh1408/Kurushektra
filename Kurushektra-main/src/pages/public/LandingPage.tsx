@@ -477,7 +477,7 @@ export default function LandingPage() {
                   <Icon name="verified" size={16} />
                   <span>Structural Invariants Confirmed</span>
                 </span>
-                <Link to="/workspace/c1" className="btn btn-primary text-xs font-mono">
+                <Link to="/workspace/two-sum" className="btn btn-primary text-xs font-mono">
                   <span>Open Coding Workspace</span>
                   <Icon name="arrow_forward" size={14} />
                 </Link>

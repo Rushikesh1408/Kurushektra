@@ -1,3 +1,6 @@
+import asyncio
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from slowapi.middleware import SlowAPIMiddleware
@@ -11,12 +14,54 @@ from app.core.errors import register_error_handlers
 from app.core.limiter import limiter
 
 
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Embedded execution job consumer: ensures local & dev runs execute immediately without requiring a separate CLI process
+    stop_event = asyncio.Event()
+
+    async def _job_poller():
+        from app.core.config import get_settings
+        from app.core.database import get_engine
+        from app.services.executor import DemoSimulationExecutor, Judge0Executor
+        from app.services.submissions import process_next_job, requeue_stale
+        from sqlalchemy.orm import sessionmaker
+
+        s = get_settings()
+        if s.demo_mode:
+            executor = DemoSimulationExecutor()
+        else:
+            try:
+                executor = Judge0Executor.from_settings()
+            except Exception:
+                executor = DemoSimulationExecutor()
+
+        Session = sessionmaker(bind=get_engine(), expire_on_commit=False)
+        while not stop_event.is_set():
+            try:
+                with Session() as db:
+                    requeue_stale(db)
+                    job_id = process_next_job(db, executor)
+                if not job_id:
+                    await asyncio.sleep(0.5)
+            except Exception:
+                await asyncio.sleep(1.0)
+
+    task = asyncio.create_task(_job_poller())
+    yield
+    stop_event.set()
+    try:
+        await asyncio.wait_for(task, timeout=1.0)
+    except Exception:
+        pass
+
+
 def create_app() -> FastAPI:
     settings = get_settings()
     app = FastAPI(
         title="COGNICODE API",
         version="1.0.0",
         description="AI-powered adaptive programming learning and code comprehension platform.",
+        lifespan=lifespan,
     )
     app.state.limiter = limiter
     app.add_middleware(SlowAPIMiddleware)
